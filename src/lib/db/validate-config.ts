@@ -1,11 +1,94 @@
 import { lookup } from "node:dns/promises";
 
+export type DatabaseConnectionMode =
+  | "direct"
+  | "dedicated-pooler"
+  | "shared-pooler"
+  | "unknown";
+
 export type DatabaseConfigStatus = {
   valid: boolean;
   error?: string;
   hostname?: string;
+  username?: string;
+  port?: string;
+  mode?: DatabaseConnectionMode;
   supabaseRef?: string;
 };
+
+export function detectConnectionMode(
+  hostname: string,
+  port: string
+): DatabaseConnectionMode {
+  if (/\.pooler\.supabase\.com$/.test(hostname)) {
+    return "shared-pooler";
+  }
+  if (/^db\.[^.]+\.supabase\.co$/.test(hostname)) {
+    return port === "6543" ? "dedicated-pooler" : "direct";
+  }
+  return "unknown";
+}
+
+function projectRefFromHostname(hostname: string): string | undefined {
+  const match = hostname.match(/^db\.([^.]+)\.supabase\.co$/);
+  return match?.[1];
+}
+
+function projectRefFromPoolerUsername(username: string): string | undefined {
+  const match = username.match(/^postgres\.([^.]+)$/);
+  return match?.[1];
+}
+
+function validateProjectRef(params: {
+  supabaseRef?: string;
+  hostname: string;
+  username: string;
+  mode: DatabaseConnectionMode;
+}): { valid: boolean; error?: string } {
+  const { supabaseRef, hostname, username, mode } = params;
+  if (!supabaseRef) {
+    return { valid: true };
+  }
+
+  if (mode === "shared-pooler") {
+    const refFromUser = projectRefFromPoolerUsername(username);
+    if (refFromUser === supabaseRef) {
+      return { valid: true };
+    }
+    return {
+      valid: false,
+      error:
+        `Shared Pooler DATABASE_URL must use username "postgres.${supabaseRef}" ` +
+        `(got "${username}"). Copy the Transaction pooler URI from Supabase → Connect.`,
+    };
+  }
+
+  if (mode === "direct" || mode === "dedicated-pooler") {
+    const refFromHost = projectRefFromHostname(hostname);
+    if (refFromHost === supabaseRef) {
+      return { valid: true };
+    }
+    return {
+      valid: false,
+      error:
+        `Direct/Dedicated DATABASE_URL must use host "db.${supabaseRef}.supabase.co" ` +
+        `(got "${hostname}"). Copy the connection string from Supabase → Connect.`,
+    };
+  }
+
+  const refFromHost = projectRefFromHostname(hostname);
+  const refFromUser = projectRefFromPoolerUsername(username);
+  if (refFromHost === supabaseRef || refFromUser === supabaseRef) {
+    return { valid: true };
+  }
+
+  return {
+    valid: false,
+    error:
+      `DATABASE_URL does not match Supabase project ref "${supabaseRef}". ` +
+      `Use host db.${supabaseRef}.supabase.co (direct) or username postgres.${supabaseRef} (shared pooler).`,
+  };
+}
 
 export function getSupabaseProjectRef(): string | undefined {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -27,11 +110,13 @@ export function validateDatabaseConfig(): DatabaseConfigStatus {
   }
 
   let hostname: string;
-  let username: string | undefined;
+  let username: string;
+  let port: string;
   try {
     const parsed = new URL(connectionString.replace(/^postgresql:/, "http:"));
     hostname = parsed.hostname;
-    username = parsed.username;
+    username = decodeURIComponent(parsed.username);
+    port = parsed.port || "5432";
   } catch {
     return {
       valid: false,
@@ -40,37 +125,39 @@ export function validateDatabaseConfig(): DatabaseConfigStatus {
     };
   }
 
-  const refMatches =
-    !supabaseRef ||
-    hostname.includes(supabaseRef) ||
-    username === `postgres.${supabaseRef}`;
+  const mode = detectConnectionMode(hostname, port);
 
-  if (supabaseRef && !refMatches) {
+  const refCheck = validateProjectRef({ supabaseRef, hostname, username, mode });
+  if (!refCheck.valid) {
     return {
       valid: false,
       hostname,
+      username,
+      port,
+      mode,
       supabaseRef,
-      error:
-        `DATABASE_URL hostname "${hostname}" does not match Supabase project ref "${supabaseRef}" from NEXT_PUBLIC_SUPABASE_URL. ` +
-        `Copy the connection string from Supabase → Project Settings → Database for project ${supabaseRef}.`,
+      error: refCheck.error,
     };
   }
 
-  // db.[ref].supabase.co is often IPv6-only; Vercel serverless requires IPv4.
-  if (/^db\.[^.]+\.supabase\.co$/.test(hostname)) {
+  // Dedicated/direct db.[ref].supabase.co is IPv6-only; Vercel serverless requires IPv4.
+  if (mode === "direct" || mode === "dedicated-pooler") {
     return {
       valid: false,
       hostname,
+      username,
+      port,
+      mode,
       supabaseRef,
       error:
-        `DATABASE_URL uses "${hostname}" which is IPv6-only (Dedicated/Direct pooler). ` +
+        `DATABASE_URL uses "${hostname}" which is IPv6-only (Direct/Dedicated pooler). ` +
         "Vercel cannot resolve this — use the Shared Pooler connection string instead: " +
         "Supabase Dashboard → Connect → Connection pooling → Transaction pooler (port 6543). " +
         "It looks like: postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres",
     };
   }
 
-  return { valid: true, hostname, supabaseRef };
+  return { valid: true, hostname, username, port, mode, supabaseRef };
 }
 
 export function getEnvironmentStatus(): {
@@ -80,20 +167,11 @@ export function getEnvironmentStatus(): {
   supabaseRef?: string;
   databaseHostname?: string;
   databaseUsername?: string;
+  databaseMode?: DatabaseConnectionMode;
   configValid: boolean;
   configError?: string;
 } {
   const config = validateDatabaseConfig();
-  let databaseUsername: string | undefined;
-  if (process.env.DATABASE_URL) {
-    try {
-      databaseUsername = new URL(
-        process.env.DATABASE_URL.replace(/^postgresql:/, "http:")
-      ).username;
-    } catch {
-      databaseUsername = undefined;
-    }
-  }
 
   return {
     DATABASE_URL: Boolean(process.env.DATABASE_URL),
@@ -101,7 +179,8 @@ export function getEnvironmentStatus(): {
     NEXT_PUBLIC_SUPABASE_ANON_KEY: Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
     supabaseRef: config.supabaseRef,
     databaseHostname: config.hostname,
-    databaseUsername,
+    databaseUsername: config.username,
+    databaseMode: config.mode,
     configValid: config.valid,
     configError: config.error,
   };

@@ -123,11 +123,25 @@ async function verifyDatabaseUrl(): Promise<void> {
   console.log("\n=== Layer 3–5: DATABASE_URL connection, schema, migrations ===");
 
   const config = validateDatabaseConfig();
+  console.log("Mode:", config.mode ?? "(unknown)");
   console.log("Hostname:", config.hostname ?? "(unknown)");
+  console.log("Username:", config.username ?? "(unknown)");
   console.log("Supabase ref:", config.supabaseRef ?? "(unknown)");
 
   if (!config.valid) {
     throw new Error(config.error ?? "Invalid DATABASE_URL");
+  }
+
+  if (config.mode === "shared-pooler") {
+    console.log(
+      "Ref check: shared pooler — validated via username",
+      config.username
+    );
+  } else if (config.mode === "direct" || config.mode === "dedicated-pooler") {
+    console.log(
+      "Ref check: direct/dedicated — validated via hostname",
+      config.hostname
+    );
   }
 
   const connectionString = process.env.DATABASE_URL!;
