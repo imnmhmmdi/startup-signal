@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ScoreBadge, formatFundingAmount, formatDate } from "@/components/score-badge";
+import { ScoreBadge, formatFundingAmount } from "@/components/score-badge";
 import { getHiringPrediction } from "@/config/product";
 import { getTopPmFitReason } from "@/config/scoring";
 import type { Company } from "@/db/schema";
@@ -112,30 +112,4 @@ export function StatCard({ label, value, detail, href }: StatCardProps) {
 
   if (href) return <Link href={href}>{content}</Link>;
   return content;
-}
-
-type FundingEventRowProps = {
-  company: Company;
-};
-
-export function FundingEventRow({ company }: FundingEventRowProps) {
-  return (
-    <Link
-      href={`/companies/${company.id}`}
-      className="flex items-center justify-between gap-4 py-3 border-b last:border-0 hover:bg-muted/50 -mx-2 px-2 rounded-md transition-colors"
-    >
-      <div className="min-w-0">
-        <p className="font-medium truncate">{company.name}</p>
-        <p className="text-sm text-muted-foreground">
-          {company.fundingRound ?? "Funding"} · {formatDate(company.fundingDate)}
-        </p>
-      </div>
-      <div className="text-right shrink-0">
-        <p className="font-semibold tabular-nums text-sm">
-          {formatFundingAmount(company.fundingAmountUsd)}
-        </p>
-        <p className="text-xs text-muted-foreground">{company.aiCategory ?? "Tech"}</p>
-      </div>
-    </Link>
-  );
 }

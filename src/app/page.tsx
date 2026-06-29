@@ -9,7 +9,8 @@ import {
   getRecentFundingEvents,
   getStrongHiringSignals,
 } from "@/lib/queries/dashboard";
-import { StatCard, CompanyCard, FundingEventRow } from "@/components/companies/company-card";
+import { StatCard, CompanyCard } from "@/components/companies/company-card";
+import { FundingEventRow } from "@/components/funding/funding-event-row";
 import { ProfileChip } from "@/components/profile-chip";
 import { PageHeader } from "@/components/layout/page-header";
 import { SectionHeader } from "@/components/layout/section-header";
