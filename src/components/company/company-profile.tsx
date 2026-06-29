@@ -26,6 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ScoreBadge, formatFundingAmount, formatDate } from "@/components/score-badge";
+import { CompanyLogo } from "@/components/company-logo";
 import { ProfileSummaryCard } from "@/components/profile-summary-card";
 import { getHiringPrediction } from "@/config/product";
 import { getBreakdownLabel, getTopPmFitReason } from "@/config/scoring";
@@ -119,12 +120,23 @@ export function CompanyProfile({
             <ArrowLeft className="h-4 w-4" />
             Back to companies
           </Link>
-          <h1 className="text-2xl font-bold tracking-tight">{company.name}</h1>
-          <div className="flex flex-wrap items-center gap-2 mt-2">
-            {company.hqCountry && <Badge variant="outline">{company.hqCountry}</Badge>}
-            {company.aiCategory && <Badge variant="secondary">{company.aiCategory}</Badge>}
-            {company.businessModel && <Badge variant="outline">{company.businessModel}</Badge>}
-            {company.fundingRound && <Badge>{company.fundingRound}</Badge>}
+          <div className="flex items-start gap-4">
+            <CompanyLogo
+              name={company.name}
+              logoUrl={company.logoUrl}
+              website={company.website}
+              websiteDomain={company.websiteDomain}
+              size="lg"
+            />
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">{company.name}</h1>
+              <div className="flex flex-wrap items-center gap-2 mt-2">
+                {company.hqCountry && <Badge variant="outline">{company.hqCountry}</Badge>}
+                {company.aiCategory && <Badge variant="secondary">{company.aiCategory}</Badge>}
+                {company.businessModel && <Badge variant="outline">{company.businessModel}</Badge>}
+                {company.fundingRound && <Badge>{company.fundingRound}</Badge>}
+              </div>
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-2">

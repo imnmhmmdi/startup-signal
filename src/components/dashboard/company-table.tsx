@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CompanyLogo } from "@/components/company-logo";
 import { ScoreBadge, formatFundingAmount, formatDate } from "@/components/score-badge";
 import { getHiringPrediction } from "@/config/product";
 import { EmptyState } from "@/components/empty-state";
@@ -104,16 +105,29 @@ export function CompanyTable({ companies, isAuthenticated }: CompanyTableProps) 
                 <TableCell>
                   <Link
                     href={`/companies/${company.id}`}
-                    className="font-medium hover:text-primary transition-colors flex items-center gap-1.5"
+                    className="font-medium hover:text-primary transition-colors flex items-center gap-2"
                   >
-                    {company.name}
-                    {company.website && (
-                      <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100" />
-                    )}
+                    <CompanyLogo
+                      name={company.name}
+                      logoUrl={company.logoUrl}
+                      website={company.website}
+                      websiteDomain={company.websiteDomain}
+                      size="sm"
+                    />
+                    <span className="min-w-0">
+                      <span className="flex items-center gap-1.5">
+                        {company.name}
+                        {company.website && (
+                          <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100" />
+                        )}
+                      </span>
+                      {company.businessModel && (
+                        <span className="block text-xs text-muted-foreground font-normal">
+                          {company.businessModel}
+                        </span>
+                      )}
+                    </span>
                   </Link>
-                  {company.businessModel && (
-                    <span className="text-xs text-muted-foreground">{company.businessModel}</span>
-                  )}
                 </TableCell>
                 <TableCell>
                   <span className="text-sm">{company.hqCountry ?? "—"}</span>

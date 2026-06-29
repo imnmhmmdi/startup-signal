@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { CompanyLogo } from "@/components/company-logo";
 import { ScoreBadge, formatFundingAmount, formatDate } from "@/components/score-badge";
 import { getHiringPrediction } from "@/config/product";
 import type { Company } from "@/db/schema";
@@ -17,11 +18,20 @@ export function FundingEventCard({ company }: FundingEventCardProps) {
       <Card className="hover:border-primary/30 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
         <CardHeader className="pb-2">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-            <div>
-              <CardTitle className="text-base">{company.name}</CardTitle>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                {formatDate(company.fundingDate)} · {company.hqCity ?? "France"}
-              </p>
+            <div className="flex items-start gap-3">
+              <CompanyLogo
+                name={company.name}
+                logoUrl={company.logoUrl}
+                website={company.website}
+                websiteDomain={company.websiteDomain}
+                size="md"
+              />
+              <div>
+                <CardTitle className="text-base">{company.name}</CardTitle>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  {formatDate(company.fundingDate)} · {company.hqCity ?? "France"}
+                </p>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <Badge>{company.fundingRound ?? "Round"}</Badge>

@@ -3,7 +3,8 @@ import { db } from "@/db";
 import { companies, rawFundingItems, ingestionRuns } from "@/db/schema";
 import type { DataSourceAdapter, NormalizedCompany } from "./types";
 import { getAllAdapters } from "./adapters";
-import { computeDataHash, extractDomain, slugify } from "./utils";
+import { extractDomain, slugify } from "./utils";
+import { buildLogoUrlFromDomain, getCompanyDomain } from "@/lib/company-logo";
 
 export async function ingestFromAdapter(adapter: DataSourceAdapter) {
   const run = await db
@@ -85,6 +86,9 @@ async function upsertCompany(
 ): Promise<"created" | "updated" | "skipped"> {
   const domain = extractDomain(normalized.website);
   const slug = slugify(normalized.name);
+  const resolvedLogoUrl =
+    normalized.logoUrl ??
+    (domain ? buildLogoUrlFromDomain(domain) : undefined);
 
   const existing = domain
     ? await db
@@ -106,6 +110,12 @@ async function upsertCompany(
     const company = existing[0];
     const mergedSources = { ...company.sources, ...normalized.sources };
 
+    const effectiveDomain = domain ?? getCompanyDomain(company);
+    const logoUrl =
+      company.logoUrl ??
+      resolvedLogoUrl ??
+      (effectiveDomain ? buildLogoUrlFromDomain(effectiveDomain) : undefined);
+
     await db
       .update(companies)
       .set({
@@ -117,6 +127,9 @@ async function upsertCompany(
         aiCategory: normalized.aiCategory ?? company.aiCategory,
         businessModel: normalized.businessModel ?? company.businessModel,
         description: normalized.description ?? company.description,
+        website: normalized.website ?? company.website,
+        websiteDomain: effectiveDomain ?? company.websiteDomain,
+        logoUrl,
         sources: mergedSources,
         dataHash,
         updatedAt: new Date(),
@@ -132,7 +145,7 @@ async function upsertCompany(
     website: normalized.website,
     websiteDomain: domain,
     linkedinUrl: normalized.linkedinUrl,
-    logoUrl: normalized.logoUrl,
+    logoUrl: resolvedLogoUrl,
     hqCity: normalized.hqCity,
     hqCountry: normalized.hqCountry,
     fundingAmountUsd: normalized.fundingAmountUsd,

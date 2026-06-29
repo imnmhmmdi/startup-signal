@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { CompanyLogo } from "@/components/company-logo";
 import { ScoreBadge, formatFundingAmount } from "@/components/score-badge";
 import { getHiringPrediction } from "@/config/product";
 import { getTopPmFitReason } from "@/config/scoring";
@@ -38,17 +39,26 @@ export function CompanyCard({ company, showPrediction = true }: CompanyCardProps
           />
         </div>
         <CardHeader className="pb-2">
-          <div>
-            <CardTitle className="text-base">{company.name}</CardTitle>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {company.hqCity ? `${company.hqCity}, ` : ""}
-              {company.hqCountry ?? "France"}
-            </p>
-            {fitReason && (
-              <p className="text-xs text-emerald-700 mt-1.5 line-clamp-2">
-                Strong match: {fitReason}
+          <div className="flex items-start gap-3">
+            <CompanyLogo
+              name={company.name}
+              logoUrl={company.logoUrl}
+              website={company.website}
+              websiteDomain={company.websiteDomain}
+              size="md"
+            />
+            <div className="min-w-0">
+              <CardTitle className="text-base">{company.name}</CardTitle>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {company.hqCity ? `${company.hqCity}, ` : ""}
+                {company.hqCountry ?? "France"}
               </p>
-            )}
+              {fitReason && (
+                <p className="text-xs text-emerald-700 mt-1.5 line-clamp-2">
+                  Strong match: {fitReason}
+                </p>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-3 flex-1 flex flex-col">

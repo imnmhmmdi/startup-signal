@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CompanyLogo } from "@/components/company-logo";
 import { ScoreBadge, formatFundingAmount, formatDate } from "@/components/score-badge";
 import { HiringUrgencyDot } from "@/components/funding/hiring-urgency-dot";
 import type { Company } from "@/db/schema";
@@ -15,6 +16,13 @@ export function FundingEventRow({ company }: FundingEventRowProps) {
     >
       <div className="flex items-start gap-2 min-w-0">
         <HiringUrgencyDot score={company.aiHiringScore ?? 0} className="mt-1.5" />
+        <CompanyLogo
+          name={company.name}
+          logoUrl={company.logoUrl}
+          website={company.website}
+          websiteDomain={company.websiteDomain}
+          size="xs"
+        />
         <div className="min-w-0">
           <p className="font-medium truncate">{company.name}</p>
           <p className="text-sm text-muted-foreground">

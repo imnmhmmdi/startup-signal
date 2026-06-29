@@ -3,6 +3,7 @@ loadEnv();
 import { ensureDatabaseReady } from "../src/lib/db/bootstrap";
 import { upsertSeedCompany } from "../src/lib/ingestion/ingest-service";
 import { computeAllScores } from "../src/lib/scoring/compute-scores";
+import { backfillCompanyLogos } from "../src/lib/company-logo-backfill";
 import { db } from "../src/db";
 import { SEED_COMPANIES } from "../src/lib/db/seed-data";
 
@@ -21,6 +22,9 @@ async function main() {
   }
 
   console.log(`Seed complete: ${created} created, ${updated} updated`);
+
+  const logosUpdated = await backfillCompanyLogos(db);
+  console.log(`Logo backfill: ${logosUpdated} companies updated`);
 
   const scored = await computeAllScores(db);
   console.log(`Scored ${scored} companies`);

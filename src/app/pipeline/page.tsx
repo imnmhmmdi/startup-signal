@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { CompanyLogo } from "@/components/company-logo";
 import { ScoreBadge, formatFundingAmount, formatDate } from "@/components/score-badge";
 import { buttonVariants } from "@/components/ui/button";
 import type { Company, SavedStatus } from "@/db/schema";
@@ -216,7 +217,16 @@ export default function PipelinePage() {
                       <Link key={company.id} href={`/companies/${company.id}`}>
                         <Card className="hover:border-primary/30 hover:shadow-sm transition-all">
                           <CardContent className="p-3 space-y-2">
-                            <p className="font-medium text-sm leading-tight">{company.name}</p>
+                            <div className="flex items-center gap-2">
+                              <CompanyLogo
+                                name={company.name}
+                                logoUrl={company.logoUrl}
+                                website={company.website}
+                                websiteDomain={company.websiteDomain}
+                                size="xs"
+                              />
+                              <p className="font-medium text-sm leading-tight">{company.name}</p>
+                            </div>
                             <ScoreBadge score={company.pmFitScore ?? 0} label="PM fit" />
                             <p className="text-[11px] text-muted-foreground">{stage.nextAction}</p>
                           </CardContent>
@@ -258,10 +268,19 @@ export default function PipelinePage() {
                     <TableCell>
                       <Link
                         href={`/companies/${company.id}`}
-                        className="font-medium hover:text-primary flex items-center gap-1.5"
+                        className="font-medium hover:text-primary flex items-center gap-2"
                       >
-                        {company.name}
-                        <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                        <CompanyLogo
+                          name={company.name}
+                          logoUrl={company.logoUrl}
+                          website={company.website}
+                          websiteDomain={company.websiteDomain}
+                          size="sm"
+                        />
+                        <span>
+                          {company.name}
+                          <ExternalLink className="inline h-3 w-3 ml-1 text-muted-foreground" />
+                        </span>
                       </Link>
                       {company.aiCategory && (
                         <Badge variant="secondary" className="text-xs mt-1">
