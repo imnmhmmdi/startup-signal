@@ -9,6 +9,7 @@ import {
   RefreshCw,
   Copy,
   Check,
+  Sparkles,
 } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -16,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -24,8 +26,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ScoreBadge, formatFundingAmount, formatDate } from "@/components/score-badge";
+import { ProfileSummaryCard } from "@/components/profile-summary-card";
 import { getHiringPrediction } from "@/config/product";
-import { getBreakdownLabel } from "@/config/scoring";
+import { getBreakdownLabel, getTopPmFitReason } from "@/config/scoring";
 import type { Company, CompanyBriefContent, SavedStatus } from "@/db/schema";
 
 const STATUS_OPTIONS: { value: SavedStatus; label: string }[] = [
@@ -33,19 +36,27 @@ const STATUS_OPTIONS: { value: SavedStatus; label: string }[] = [
   { value: "contacted", label: "Contacted" },
   { value: "applied", label: "Applied" },
   { value: "interview", label: "Interview" },
-  { value: "rejected", label: "Rejected" },
   { value: "offer", label: "Offer" },
+  { value: "rejected", label: "Rejected" },
 ];
 
 type CompanyProfileProps = {
   company: Company & {
     saved: { id: string; notes: string | null; status: SavedStatus } | null;
   };
-  brief: CompanyBriefContent | null;
+  brief: CompanyBriefContent;
+  briefUpdatedAt?: Date | null;
+  isAiGenerated?: boolean;
   isAuthenticated: boolean;
 };
 
-export function CompanyProfile({ company, brief, isAuthenticated }: CompanyProfileProps) {
+export function CompanyProfile({
+  company,
+  brief,
+  briefUpdatedAt,
+  isAiGenerated = false,
+  isAuthenticated,
+}: CompanyProfileProps) {
   const [isSaved, setIsSaved] = useState(!!company.saved);
   const [notes, setNotes] = useState(company.saved?.notes ?? "");
   const [status, setStatus] = useState<SavedStatus>(company.saved?.status ?? "new");
@@ -53,6 +64,7 @@ export function CompanyProfile({ company, brief, isAuthenticated }: CompanyProfi
   const [regenerating, setRegenerating] = useState(false);
   const [currentBrief, setCurrentBrief] = useState(brief);
   const prediction = getHiringPrediction(company.aiHiringScore ?? 0);
+  const fitReason = getTopPmFitReason(company.pmFitScoreBreakdown);
 
   const toggleSave = async () => {
     if (!isAuthenticated) {
@@ -142,30 +154,36 @@ export function CompanyProfile({ company, brief, isAuthenticated }: CompanyProfi
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <Card>
-              <CardContent className="pt-4 flex flex-col items-center">
-                <ScoreBadge score={company.pmFitScore ?? 0} label="PM fit" size="md" showTier />
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-4 flex flex-col items-center">
-                <ScoreBadge score={company.aiHiringScore ?? 0} label="Hiring signal" size="md" />
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-4 text-center">
-                <p className="text-sm font-semibold">{prediction.label}</p>
-                <p className="text-xs text-muted-foreground mt-1">Hiring prediction</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-4 text-center">
-                <p className="text-2xl font-bold tabular-nums">{company.openRolesTotal ?? 0}</p>
-                <p className="text-xs text-muted-foreground mt-1">Open roles</p>
-              </CardContent>
-            </Card>
-          </div>
+          <Card className="border-emerald-200/60 bg-emerald-500/5">
+            <CardContent className="py-5">
+              <div className="flex flex-col lg:flex-row lg:items-center gap-5">
+                <ScoreBadge
+                  score={company.pmFitScore ?? 0}
+                  label="PM fit"
+                  size="lg"
+                  showTier
+                  align="start"
+                />
+                {fitReason && (
+                  <div className="flex-1">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Strong match because</p>
+                    <p className="text-sm font-medium mt-0.5">{fitReason}</p>
+                  </div>
+                )}
+                <div className="flex flex-wrap items-center gap-4 lg:ml-auto">
+                  <ScoreBadge score={company.aiHiringScore ?? 0} label="Hiring signal" size="md" />
+                  <div className="text-center">
+                    <p className="text-sm font-semibold">{prediction.label}</p>
+                    <p className="text-xs text-muted-foreground">Hiring prediction</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold tabular-nums">{company.openRolesTotal ?? 0}</p>
+                    <p className="text-xs text-muted-foreground">Open roles</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
           <Card>
             <CardHeader>
@@ -215,52 +233,79 @@ export function CompanyProfile({ company, brief, isAuthenticated }: CompanyProfi
             </CardContent>
           </Card>
 
-          {currentBrief && (
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-base">Company brief</CardTitle>
-                <Button variant="ghost" size="sm" onClick={regenerateBrief} disabled={regenerating}>
-                  <RefreshCw className={cn("h-4 w-4 mr-1.5", regenerating && "animate-spin")} />
-                  Regenerate
-                </Button>
-              </CardHeader>
-              <CardContent className="space-y-4 text-sm">
-                <BriefSection title="Why now?" content={currentBrief.whyNow} />
-                <BriefSection title="Why this company?" content={currentBrief.whyThisCompany} />
-                <BriefSection title="Why they may hire PMs" content={currentBrief.whyTheyMayHirePMs} />
-                <BriefSection title="Outreach strategy" content={currentBrief.suggestedOutreachStrategy} />
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="font-medium text-muted-foreground">LinkedIn message</p>
-                    <Button variant="ghost" size="sm" onClick={copyMessage}>
-                      {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                    </Button>
-                  </div>
-                  <p className="bg-muted rounded-md p-3 italic">{currentBrief.linkedinMessage}</p>
+          <Card>
+            <CardHeader className="flex flex-row items-start justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <CardTitle className="text-base">Company brief</CardTitle>
+                  {isAiGenerated ? (
+                    <Badge variant="secondary" className="text-xs gap-1">
+                      <Sparkles className="h-3 w-3" />
+                      AI-generated
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-xs">Template</Badge>
+                  )}
                 </div>
-                <BriefSection title="Resume focus" content={currentBrief.resumeFocus} />
-                <div>
-                  <p className="font-medium text-muted-foreground mb-1">Interview prep</p>
-                  <ul className="list-disc list-inside space-y-0.5">
+                {briefUpdatedAt && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Updated {formatDate(briefUpdatedAt)}
+                  </p>
+                )}
+              </div>
+              <Button variant="ghost" size="sm" onClick={regenerateBrief} disabled={regenerating}>
+                <RefreshCw className={cn("h-4 w-4 mr-1.5", regenerating && "animate-spin")} />
+                Regenerate
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <Tabs defaultValue="why">
+                <TabsList className="mb-4">
+                  <TabsTrigger value="why">Why now</TabsTrigger>
+                  <TabsTrigger value="outreach">Outreach</TabsTrigger>
+                  <TabsTrigger value="prep">Interview prep</TabsTrigger>
+                  <TabsTrigger value="risks">Risks</TabsTrigger>
+                </TabsList>
+                <TabsContent value="why" className="space-y-4 text-sm">
+                  <BriefSection title="Why now?" content={currentBrief.whyNow} />
+                  <BriefSection title="Why this company?" content={currentBrief.whyThisCompany} />
+                  <BriefSection title="Why they may hire PMs" content={currentBrief.whyTheyMayHirePMs} />
+                </TabsContent>
+                <TabsContent value="outreach" className="space-y-4 text-sm">
+                  <BriefSection title="Outreach strategy" content={currentBrief.suggestedOutreachStrategy} />
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="font-medium text-muted-foreground">LinkedIn message</p>
+                      <Button variant="ghost" size="sm" onClick={copyMessage}>
+                        {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                      </Button>
+                    </div>
+                    <p className="bg-muted rounded-md p-3 italic">{currentBrief.linkedinMessage}</p>
+                  </div>
+                  <BriefSection title="Resume focus" content={currentBrief.resumeFocus} />
+                </TabsContent>
+                <TabsContent value="prep" className="text-sm">
+                  <ul className="list-disc list-inside space-y-1">
                     {currentBrief.interviewPrepTopics.map((t) => (
                       <li key={t}>{t}</li>
                     ))}
                   </ul>
-                </div>
-                <div>
-                  <p className="font-medium text-muted-foreground mb-1">Risks</p>
-                  <ul className="list-disc list-inside space-y-0.5 text-red-600/80">
+                </TabsContent>
+                <TabsContent value="risks" className="text-sm">
+                  <ul className="list-disc list-inside space-y-1 text-red-600/80">
                     {currentBrief.risks.map((r) => (
                       <li key={r}>{r}</li>
                     ))}
                   </ul>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
         </div>
 
         <div className="space-y-6">
+          <ProfileSummaryCard />
+
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Score Breakdown</CardTitle>
@@ -331,16 +376,29 @@ function ScoreBreakdown({
     );
   }
 
+  const maxAbs = Math.max(...Object.values(breakdown).map(Math.abs), 1);
+
   return (
     <div>
-      <p className="font-medium mb-2">{title}</p>
-      <div className="space-y-1">
+      <p className="font-medium mb-3">{title}</p>
+      <div className="space-y-3">
         {Object.entries(breakdown).map(([key, value]) => (
-          <div key={key} className="flex justify-between gap-4">
-            <span className="text-muted-foreground">{getBreakdownLabel(key)}</span>
-            <span className={cn("tabular-nums font-medium", value < 0 && "text-red-600")}>
-              {value > 0 ? "+" : ""}{value}
-            </span>
+          <div key={key}>
+            <div className="flex justify-between gap-4 text-xs mb-1">
+              <span className="text-muted-foreground">{getBreakdownLabel(key)}</span>
+              <span className={cn("tabular-nums font-medium", value < 0 && "text-red-600")}>
+                {value > 0 ? "+" : ""}{value}
+              </span>
+            </div>
+            <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+              <div
+                className={cn(
+                  "h-full rounded-full transition-all",
+                  value >= 0 ? "bg-emerald-500" : "bg-red-500"
+                )}
+                style={{ width: `${(Math.abs(value) / maxAbs) * 100}%` }}
+              />
+            </div>
           </div>
         ))}
       </div>

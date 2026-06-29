@@ -80,6 +80,35 @@ function parseBriefResponse(text: string): CompanyBriefContent {
   return JSON.parse(jsonMatch[0]) as CompanyBriefContent;
 }
 
+export async function getCompanyBrief(
+  companyId: string
+): Promise<CompanyBriefContent | null> {
+  const meta = await getCompanyBriefMeta(companyId);
+  return meta.brief;
+}
+
+export async function getCompanyBriefMeta(companyId: string): Promise<{
+  brief: CompanyBriefContent | null;
+  updatedAt: Date | null;
+  isAiGenerated: boolean;
+}> {
+  const [existingBrief] = await db
+    .select()
+    .from(companyBriefs)
+    .where(eq(companyBriefs.companyId, companyId))
+    .limit(1);
+
+  return {
+    brief: existingBrief?.brief ?? null,
+    updatedAt: existingBrief?.updatedAt ?? null,
+    isAiGenerated: !!existingBrief,
+  };
+}
+
+export function getStaticBrief(company: Company): CompanyBriefContent {
+  return getFallbackBrief(company);
+}
+
 export async function generateBriefIfNeeded(companyId: string): Promise<CompanyBriefContent | null> {
   const [company] = await db.select().from(companies).where(eq(companies.id, companyId)).limit(1);
   if (!company) return null;
