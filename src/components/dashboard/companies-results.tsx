@@ -4,6 +4,7 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { LayoutGrid, TableProperties } from "lucide-react";
 import { CompanyTable } from "@/components/dashboard/company-table";
 import { CompanyCard } from "@/components/companies/company-card";
+import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
 import type { Company, SavedStatus } from "@/db/schema";
 
@@ -71,9 +72,10 @@ export function CompaniesResults({
 
   if (companies.length === 0) {
     return (
-      <div className="rounded-lg border bg-card p-12 text-center">
-        <p className="text-muted-foreground">No companies match your filters.</p>
-      </div>
+      <EmptyState
+        title="No companies match your filters"
+        description="Try adjusting your filters or clearing them to see more results."
+      />
     );
   }
 

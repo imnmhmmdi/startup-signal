@@ -7,7 +7,7 @@ import { FundingFilters } from "@/components/funding/funding-filters";
 import { computeFundingStats, queryFundingEvents } from "@/lib/queries/dashboard";
 import { getFilterOptions } from "@/lib/queries/companies";
 import { groupFundingEventsByMonth } from "@/lib/funding-utils";
-import { Card, CardContent } from "@/components/ui/card";
+import { EmptyState } from "@/components/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PRODUCT } from "@/config/product";
 import { PageHeader } from "@/components/layout/page-header";
@@ -48,11 +48,10 @@ export default async function FundingPage({ searchParams }: PageProps) {
           </Suspense>
 
           {events.length === 0 ? (
-            <Card>
-              <CardContent className="py-12 text-center text-muted-foreground">
-                No funding events match your filters.
-              </CardContent>
-            </Card>
+            <EmptyState
+              title="No funding events match your filters"
+              description="Try widening the date range or lowering the PM fit threshold."
+            />
           ) : (
             groupedEvents.map(([month, monthEvents]) => (
               <section key={month}>

@@ -1,3 +1,4 @@
+import { Target, TrendingUp, LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type ScoreBadgeProps = {
@@ -6,6 +7,11 @@ type ScoreBadgeProps = {
   size?: "sm" | "md" | "lg";
   showTier?: boolean;
   align?: "center" | "start";
+};
+
+const LABEL_ICONS: Record<string, LucideIcon> = {
+  "PM fit": Target,
+  "Hiring signal": TrendingUp,
 };
 
 export function getScoreTier(score: number): { label: string; shortLabel: string } {
@@ -29,11 +35,13 @@ export function ScoreBadge({
   align = "center",
 }: ScoreBadgeProps) {
   const tier = getScoreTier(score);
+  const Icon = label ? LABEL_ICONS[label] : undefined;
 
   return (
     <div className={cn("flex flex-col gap-0.5", align === "center" ? "items-center" : "items-start")}>
       {label && (
-        <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+        <span className="inline-flex items-center gap-1 text-xs uppercase tracking-wider text-muted-foreground font-medium">
+          {Icon && <Icon className="h-3 w-3" />}
           {label}
         </span>
       )}

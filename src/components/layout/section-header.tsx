@@ -18,7 +18,7 @@ export function SectionHeader({
 }: SectionHeaderProps) {
   return (
     <div className={cn("flex items-center justify-between mb-4", className)}>
-      <h2 className="text-lg font-semibold">{title}</h2>
+      <h2 className="text-section-title">{title}</h2>
       {href && (
         <Link href={href} className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}>
           {linkLabel} <ArrowRight className="h-4 w-4 ml-1" />

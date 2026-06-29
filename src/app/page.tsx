@@ -47,11 +47,12 @@ export default async function OverviewPage() {
   const briefingLine = buildBriefingLine(stats);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       <PageHeader
         title="Overview"
         subtitle={briefingLine}
         actions={<ProfileChip />}
+        size="lg"
       />
 
       {topPmFit.length > 0 && (

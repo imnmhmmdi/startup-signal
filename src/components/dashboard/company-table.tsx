@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScoreBadge, formatFundingAmount, formatDate } from "@/components/score-badge";
 import { getHiringPrediction } from "@/config/product";
+import { EmptyState } from "@/components/empty-state";
 import type { Company, SavedStatus } from "@/db/schema";
 import { cn } from "@/lib/utils";
 
@@ -52,9 +53,10 @@ export function CompanyTable({ companies, isAuthenticated }: CompanyTableProps) 
 
   if (companies.length === 0) {
     return (
-      <div className="rounded-lg border bg-card p-12 text-center">
-        <p className="text-muted-foreground">No companies match your filters.</p>
-      </div>
+      <EmptyState
+        title="No companies match your filters"
+        description="Try adjusting your filters or clearing them to see more results."
+      />
     );
   }
 
@@ -147,7 +149,12 @@ export function CompanyTable({ companies, isAuthenticated }: CompanyTableProps) 
                 <TableCell className="text-center">
                   <ScoreBadge score={company.aiHiringScore ?? 0} label="Hiring signal" />
                 </TableCell>
-                <TableCell className="text-center">
+                <TableCell
+                  className={cn(
+                    "text-center",
+                    (company.pmFitScore ?? 0) >= 70 && "bg-emerald-500/5"
+                  )}
+                >
                   <ScoreBadge score={company.pmFitScore ?? 0} label="PM fit" showTier />
                 </TableCell>
                 <TableCell className="text-center tabular-nums text-sm">

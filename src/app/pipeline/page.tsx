@@ -26,6 +26,7 @@ import type { Company, SavedStatus } from "@/db/schema";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/layout/page-header";
 import { PipelineLoadingSkeleton } from "@/components/pipeline/pipeline-loading";
+import { EmptyState } from "@/components/empty-state";
 
 const PIPELINE_STAGES: {
   value: SavedStatus;
@@ -113,13 +114,16 @@ export default function PipelinePage() {
           title="Pipeline"
           subtitle="Track companies from discovery through application"
         />
-        <div className="rounded-lg border bg-card p-12 text-center space-y-3">
-          <Kanban className="h-8 w-8 mx-auto text-muted-foreground" />
-          <p className="text-muted-foreground">Sign in to manage your application pipeline.</p>
-          <Link href="/login" className={cn(buttonVariants({ variant: "default", size: "sm" }))}>
-            Sign in
-          </Link>
-        </div>
+        <EmptyState
+          icon={<Kanban className="h-8 w-8" />}
+          title="Sign in to manage your pipeline"
+          description="Track companies from discovery through application."
+          action={
+            <Link href="/login" className={cn(buttonVariants({ variant: "default", size: "sm" }))}>
+              Sign in
+            </Link>
+          }
+        />
       </div>
     );
   }
@@ -128,9 +132,7 @@ export default function PipelinePage() {
     return (
       <div className="space-y-6">
         <PageHeader title="Pipeline" />
-        <div className="rounded-lg border bg-card p-12 text-center space-y-3">
-          <p className="text-muted-foreground">Unable to load pipeline. Please try again.</p>
-        </div>
+        <EmptyState title="Unable to load pipeline" description="Please try again in a moment." />
       </div>
     );
   }
@@ -142,13 +144,16 @@ export default function PipelinePage() {
           title="Pipeline"
           subtitle="Track companies from discovery through application"
         />
-        <div className="rounded-lg border bg-card p-12 text-center space-y-3">
-          <Kanban className="h-8 w-8 mx-auto text-muted-foreground" />
-          <p className="text-muted-foreground">No companies in your pipeline yet.</p>
-          <Link href="/companies" className={cn(buttonVariants({ variant: "default", size: "sm" }))}>
-            Browse companies
-          </Link>
-        </div>
+        <EmptyState
+          icon={<Kanban className="h-8 w-8" />}
+          title="No companies in your pipeline yet"
+          description="Save companies from the browse view to track your application workflow."
+          action={
+            <Link href="/companies" className={cn(buttonVariants({ variant: "default", size: "sm" }))}>
+              Browse companies
+            </Link>
+          }
+        />
       </div>
     );
   }
@@ -264,6 +269,7 @@ export default function PipelinePage() {
           </TableBody>
         </Table>
       </div>
+      )}
     </div>
   );
 }
