@@ -61,3 +61,20 @@ export const SCORE_BREAKDOWN_LABELS: Record<string, string> = {
 export function getBreakdownLabel(key: string): string {
   return SCORE_BREAKDOWN_LABELS[key] ?? key.replace(/([A-Z])/g, " $1").trim();
 }
+
+export function getTopPmFitReason(
+  breakdown: Record<string, number> | null | undefined
+): string | null {
+  if (!breakdown) return null;
+
+  const top = Object.entries(breakdown)
+    .filter(([, value]) => value > 0)
+    .sort((a, b) => b[1] - a[1])[0];
+
+  if (!top) return null;
+
+  const label = getBreakdownLabel(top[0]);
+  const maxLength = 60;
+  if (label.length <= maxLength) return label;
+  return `${label.slice(0, maxLength - 1).trim()}…`;
+}

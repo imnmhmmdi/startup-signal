@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScoreBadge, formatFundingAmount, formatDate } from "@/components/score-badge";
 import { getHiringPrediction } from "@/config/product";
+import { getTopPmFitReason } from "@/config/scoring";
 import type { Company } from "@/db/schema";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +16,7 @@ type CompanyCardProps = {
 export function CompanyCard({ company, showPrediction = true }: CompanyCardProps) {
   const prediction = getHiringPrediction(company.aiHiringScore ?? 0);
   const pmScore = company.pmFitScore ?? 0;
+  const fitReason = getTopPmFitReason(company.pmFitScoreBreakdown);
 
   return (
     <Link href={`/companies/${company.id}`}>
@@ -42,6 +44,11 @@ export function CompanyCard({ company, showPrediction = true }: CompanyCardProps
               {company.hqCity ? `${company.hqCity}, ` : ""}
               {company.hqCountry ?? "France"}
             </p>
+            {fitReason && (
+              <p className="text-xs text-emerald-700 mt-1.5 line-clamp-2">
+                Strong match: {fitReason}
+              </p>
+            )}
           </div>
         </CardHeader>
         <CardContent className="space-y-3 flex-1 flex flex-col">
