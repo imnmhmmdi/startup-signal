@@ -106,7 +106,7 @@ export default async function OverviewPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <section>
+          <section className="rounded-lg border border-emerald-200/60 bg-emerald-500/5 p-4 sm:p-5 border-l-4 border-l-emerald-500">
             <SectionHeader title="Top PM fit companies" href="/companies?sortBy=pmFitScore" />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {topPmFit.map((company) => (
