@@ -1,7 +1,6 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
 import { getUser } from "@/lib/supabase/server";
 import {
   getOverviewStats,
@@ -12,6 +11,7 @@ import {
 import { StatCard, CompanyCard, FundingEventRow } from "@/components/companies/company-card";
 import { ProfileChip } from "@/components/profile-chip";
 import { PageHeader } from "@/components/layout/page-header";
+import { SectionHeader } from "@/components/layout/section-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 import { PRODUCT } from "@/config/product";
@@ -86,15 +86,7 @@ export default async function OverviewPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           <section>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">Top PM fit companies</h2>
-              <Link
-                href="/companies?sortBy=pmFitScore"
-                className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
-              >
-                View all <ArrowRight className="h-4 w-4 ml-1" />
-              </Link>
-            </div>
+            <SectionHeader title="Top PM fit companies" href="/companies?sortBy=pmFitScore" />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {topPmFit.map((company) => (
                 <CompanyCard key={company.id} company={company} />
@@ -103,15 +95,10 @@ export default async function OverviewPage() {
           </section>
 
           <section>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">Strong hiring signals</h2>
-              <Link
-                href="/companies?sortBy=aiHiringScore&minAiHiringScore=60"
-                className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
-              >
-                View all <ArrowRight className="h-4 w-4 ml-1" />
-              </Link>
-            </div>
+            <SectionHeader
+              title="Strong hiring signals"
+              href="/companies?sortBy=aiHiringScore&minAiHiringScore=60"
+            />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {hiringSignals.map((company) => (
                 <CompanyCard key={company.id} company={company} />
