@@ -132,7 +132,12 @@ export default async function OverviewPage() {
         <div>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-base">Recent funding</CardTitle>
+              <div>
+                <CardTitle className="text-base">Recent funding</CardTitle>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Funded in last 30 days — PM hiring likely within 90 days
+                </p>
+              </div>
               <Link href="/funding" className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}>
                 All events
               </Link>
