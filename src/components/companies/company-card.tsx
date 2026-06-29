@@ -19,8 +19,8 @@ export function CompanyCard({ company, showPrediction = true }: CompanyCardProps
   const fitReason = getTopPmFitReason(company.pmFitScoreBreakdown);
 
   return (
-    <Link href={`/companies/${company.id}`}>
-      <Card className="hover:border-primary/30 hover:shadow-sm transition-all h-full flex flex-col">
+    <Link href={`/companies/${company.id}`} className="block cursor-pointer">
+      <Card className="hover:border-primary/30 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 h-full flex flex-col">
         <div
           className={cn(
             "flex items-center justify-between gap-3 px-4 py-3 border-b",
@@ -96,7 +96,7 @@ type StatCardProps = {
 
 export function StatCard({ label, value, detail, href }: StatCardProps) {
   const content = (
-    <Card className={href ? "hover:border-primary/30 transition-colors" : ""}>
+    <Card className={href ? "hover:border-primary/30 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer" : ""}>
       <CardContent className="pt-5">
         <p className="text-sm text-muted-foreground">{label}</p>
         <p className="text-3xl font-bold tabular-nums mt-1">{value}</p>

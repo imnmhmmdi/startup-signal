@@ -29,8 +29,8 @@ export default async function FundingPage() {
           {events.map((company) => {
             const prediction = getHiringPrediction(company.aiHiringScore ?? 0);
             return (
-              <Link key={company.id} href={`/companies/${company.id}`}>
-                <Card className="hover:border-primary/30 transition-colors">
+              <Link key={company.id} href={`/companies/${company.id}`} className="block cursor-pointer">
+                <Card className="hover:border-primary/30 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
                   <CardHeader className="pb-2">
                     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                       <div>
