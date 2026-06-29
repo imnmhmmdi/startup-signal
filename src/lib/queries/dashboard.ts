@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, sql } from "drizzle-orm";
+import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { companies, savedCompanies } from "@/db/schema";
 import { PRODUCT } from "@/config/product";
@@ -86,17 +86,61 @@ export async function getTopPmFitCompanies(limit = 5) {
 }
 
 export async function getRecentFundingEvents(limit = 10) {
+  return queryFundingEvents({}, limit);
+}
+
+export type FundingQueryFilters = {
+  fundingDateFrom?: string;
+  fundingDateTo?: string;
+  minPmFitScore?: number;
+  fundingRound?: string;
+};
+
+export async function queryFundingEvents(
+  filters: FundingQueryFilters = {},
+  limit = 100
+) {
+  const conditions = [
+    eq(companies.hqCountry, PRODUCT.defaultCountry),
+    sql`${companies.fundingDate} IS NOT NULL`,
+  ];
+
+  if (filters.fundingDateFrom) {
+    conditions.push(gte(companies.fundingDate, new Date(filters.fundingDateFrom)));
+  }
+  if (filters.fundingDateTo) {
+    conditions.push(lte(companies.fundingDate, new Date(filters.fundingDateTo)));
+  }
+  if (filters.minPmFitScore !== undefined) {
+    conditions.push(gte(companies.pmFitScore, filters.minPmFitScore));
+  }
+  if (filters.fundingRound) {
+    conditions.push(eq(companies.fundingRound, filters.fundingRound));
+  }
+
   return db
     .select()
     .from(companies)
-    .where(
-      and(
-        eq(companies.hqCountry, PRODUCT.defaultCountry),
-        sql`${companies.fundingDate} IS NOT NULL`
-      )
-    )
+    .where(and(...conditions))
     .orderBy(desc(companies.fundingDate))
     .limit(limit);
+}
+
+export function computeFundingStats(events: { fundingDate: Date | null; pmFitScore: number | null; fundingAmountUsd: number | null }[]) {
+  const now = new Date();
+  const thisMonthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+
+  const eventsThisMonth = events.filter(
+    (e) => e.fundingDate && new Date(e.fundingDate) >= thisMonthStart
+  ).length;
+
+  const highPmFit = events.filter((e) => (e.pmFitScore ?? 0) >= 70).length;
+
+  return {
+    totalEvents: events.length,
+    eventsThisMonth,
+    highPmFit,
+  };
 }
 
 export async function getStrongHiringSignals(limit = 5) {
