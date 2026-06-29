@@ -29,16 +29,10 @@ import { ScoreBadge, formatFundingAmount, formatDate } from "@/components/score-
 import { ProfileSummaryCard } from "@/components/profile-summary-card";
 import { getHiringPrediction } from "@/config/product";
 import { getBreakdownLabel, getTopPmFitReason } from "@/config/scoring";
+import { PIPELINE_STATUS_OPTIONS } from "@/config/pipeline-stages";
 import type { Company, CompanyBriefContent, SavedStatus } from "@/db/schema";
 
-const STATUS_OPTIONS: { value: SavedStatus; label: string }[] = [
-  { value: "new", label: "New" },
-  { value: "contacted", label: "Contacted" },
-  { value: "applied", label: "Applied" },
-  { value: "interview", label: "Interview" },
-  { value: "offer", label: "Offer" },
-  { value: "rejected", label: "Rejected" },
-];
+const STATUS_OPTIONS = PIPELINE_STATUS_OPTIONS;
 
 type CompanyProfileProps = {
   company: Company & {
