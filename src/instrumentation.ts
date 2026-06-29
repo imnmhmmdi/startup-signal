@@ -6,6 +6,13 @@ export async function register() {
     return;
   }
 
+  // Only bootstrap when explicitly requested — avoids blocking dev server startup
+  // and exhausting DB connections on every cold start.
+  // Run once: RUN_DB_BOOTSTRAP=true npm run dev  OR  npm run db:bootstrap
+  if (process.env.RUN_DB_BOOTSTRAP !== "true") {
+    return;
+  }
+
   const { validateDatabaseConfig } = await import("@/lib/db/validate-config");
   const config = validateDatabaseConfig();
 

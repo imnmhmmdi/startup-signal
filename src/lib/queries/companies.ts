@@ -1,5 +1,6 @@
 import { and, asc, desc, eq, gte, lte, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
+import { withQueryTimeout } from "@/lib/db/with-query-timeout";
 import { companies, savedCompanies } from "@/db/schema";
 
 export type CompanyFilters = {
@@ -20,6 +21,8 @@ export type CompanyFilters = {
 };
 
 export async function queryCompanies(filters: CompanyFilters = {}) {
+  return withQueryTimeout(
+    (async () => {
   const conditions: SQL[] = [];
 
   if (filters.country) {
@@ -95,9 +98,14 @@ export async function queryCompanies(filters: CompanyFilters = {}) {
       ? { id: r.saved.id, notes: r.saved.notes, status: r.saved.status }
       : null,
   }));
+    })(),
+    "Companies query"
+  );
 }
 
 export async function getCompanyById(id: string, userId?: string) {
+  return withQueryTimeout(
+    (async () => {
   const [result] = await db
     .select({
       company: companies,
@@ -121,9 +129,14 @@ export async function getCompanyById(id: string, userId?: string) {
       ? { id: result.saved.id, notes: result.saved.notes, status: result.saved.status }
       : null,
   };
+    })(),
+    "Company detail"
+  );
 }
 
 export async function getFilterOptions() {
+  return withQueryTimeout(
+    (async () => {
   const [countries, rounds, categories] = await Promise.all([
     db
       .selectDistinct({ value: companies.hqCountry })
@@ -147,6 +160,9 @@ export async function getFilterOptions() {
     fundingRounds: rounds.map((r) => r.value).filter(Boolean) as string[],
     aiCategories: categories.map((c) => c.value).filter(Boolean) as string[],
   };
+    })(),
+    "Filter options"
+  );
 }
 
 export async function getCompanyCount() {

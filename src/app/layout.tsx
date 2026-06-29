@@ -25,7 +25,13 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const user = await getUser();
+  let userEmail: string | null | undefined;
+  try {
+    const user = await getUser();
+    userEmail = user?.email;
+  } catch (error) {
+    console.error("[auth] Failed to load user session:", error);
+  }
 
   return (
     <html
@@ -33,7 +39,7 @@ export default async function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full">
-        <AppShell userEmail={user?.email}>{children}</AppShell>
+        <AppShell userEmail={userEmail}>{children}</AppShell>
       </body>
     </html>
   );

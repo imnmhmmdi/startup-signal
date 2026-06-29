@@ -1,5 +1,6 @@
 import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
 import { db } from "@/db";
+import { withQueryTimeout } from "@/lib/db/with-query-timeout";
 import { companies, savedCompanies } from "@/db/schema";
 import { PRODUCT } from "@/config/product";
 
@@ -13,6 +14,8 @@ function daysAgo(days: number): Date {
 }
 
 export async function getOverviewStats(userId?: string) {
+  return withQueryTimeout(
+    (async () => {
   const frenchCondition = eq(companies.hqCountry, PRODUCT.defaultCountry);
   const recentFunding = gte(companies.fundingDate, SIX_MONTHS_AGO);
 
@@ -74,15 +77,21 @@ export async function getOverviewStats(userId?: string) {
     pipelineCount,
     recentHighPmFit,
   };
+    })(),
+    "Overview stats"
+  );
 }
 
 export async function getTopPmFitCompanies(limit = 5) {
-  return db
-    .select()
-    .from(companies)
-    .where(eq(companies.hqCountry, PRODUCT.defaultCountry))
-    .orderBy(desc(companies.pmFitScore))
-    .limit(limit);
+  return withQueryTimeout(
+    db
+      .select()
+      .from(companies)
+      .where(eq(companies.hqCountry, PRODUCT.defaultCountry))
+      .orderBy(desc(companies.pmFitScore))
+      .limit(limit),
+    "Top PM fit companies"
+  );
 }
 
 export async function getRecentFundingEvents(limit = 10) {
@@ -118,12 +127,15 @@ export async function queryFundingEvents(
     conditions.push(eq(companies.fundingRound, filters.fundingRound));
   }
 
-  return db
-    .select()
-    .from(companies)
-    .where(and(...conditions))
-    .orderBy(desc(companies.fundingDate))
-    .limit(limit);
+  return withQueryTimeout(
+    db
+      .select()
+      .from(companies)
+      .where(and(...conditions))
+      .orderBy(desc(companies.fundingDate))
+      .limit(limit),
+    "Funding events"
+  );
 }
 
 export function computeFundingStats(events: { fundingDate: Date | null; pmFitScore: number | null; fundingAmountUsd: number | null }[]) {
@@ -144,15 +156,18 @@ export function computeFundingStats(events: { fundingDate: Date | null; pmFitSco
 }
 
 export async function getStrongHiringSignals(limit = 5) {
-  return db
-    .select()
-    .from(companies)
-    .where(
-      and(
-        eq(companies.hqCountry, PRODUCT.defaultCountry),
-        gte(companies.aiHiringScore, 60)
+  return withQueryTimeout(
+    db
+      .select()
+      .from(companies)
+      .where(
+        and(
+          eq(companies.hqCountry, PRODUCT.defaultCountry),
+          gte(companies.aiHiringScore, 60)
+        )
       )
-    )
-    .orderBy(desc(companies.aiHiringScore))
-    .limit(limit);
+      .orderBy(desc(companies.aiHiringScore))
+      .limit(limit),
+    "Hiring signals"
+  );
 }

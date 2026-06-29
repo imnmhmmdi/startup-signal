@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { getCompanyById } from "@/lib/queries/companies";
 import { getUser } from "@/lib/supabase/server";
-import { generateBriefIfNeeded } from "@/lib/llm/company-brief";
+import { generateBriefIfNeeded, getCompanyBrief, getStaticBrief } from "@/lib/llm/company-brief";
 import { db } from "@/db";
 import { companyBriefs } from "@/db/schema";
 
@@ -18,7 +18,7 @@ export async function GET(
     return NextResponse.json({ error: "Company not found" }, { status: 404 });
   }
 
-  const brief = await generateBriefIfNeeded(id);
+  const brief = (await getCompanyBrief(id)) ?? getStaticBrief(company);
 
   return NextResponse.json({ company, brief });
 }

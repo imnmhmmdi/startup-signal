@@ -4,21 +4,30 @@ import { db } from "@/db";
 import { savedCompanies } from "@/db/schema";
 import { getUser } from "@/lib/supabase/server";
 import { queryCompanies } from "@/lib/queries/companies";
+import { formatDatabaseConnectionError } from "@/lib/db/validate-config";
 
 export async function GET() {
-  const user = await getUser();
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    const user = await getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const companies = await queryCompanies({
+      userId: user.id,
+      savedOnly: true,
+      sortBy: "pmFitScore",
+      sortOrder: "desc",
+    });
+
+    return NextResponse.json({ companies });
+  } catch (error) {
+    console.error("[api/saved] GET failed:", error);
+    return NextResponse.json(
+      { error: formatDatabaseConnectionError(error) },
+      { status: 503 }
+    );
   }
-
-  const companies = await queryCompanies({
-    userId: user.id,
-    savedOnly: true,
-    sortBy: "pmFitScore",
-    sortOrder: "desc",
-  });
-
-  return NextResponse.json({ companies });
 }
 
 export async function POST(request: NextRequest) {

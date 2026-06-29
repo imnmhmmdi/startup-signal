@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { companies, rawFundingItems, ingestionRuns } from "@/db/schema";
 import type { DataSourceAdapter, NormalizedCompany } from "./types";
 import { getAllAdapters } from "./adapters";
-import { extractDomain, slugify } from "./utils";
+import { computeDataHash, extractDomain, slugify } from "./utils";
 import { buildLogoUrlFromDomain, getCompanyDomain } from "@/lib/company-logo";
 
 export async function ingestFromAdapter(adapter: DataSourceAdapter) {

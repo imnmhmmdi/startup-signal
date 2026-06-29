@@ -44,13 +44,17 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  await supabase.auth.getUser();
+  const authRefresh = supabase.auth.getUser().catch(() => undefined);
+  const authTimeout = new Promise<undefined>((resolve) => {
+    setTimeout(resolve, 5_000);
+  });
+  await Promise.race([authRefresh, authTimeout]);
 
   return supabaseResponse;
 }
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|api/cron|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|api/cron|api/health|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
