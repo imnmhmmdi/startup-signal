@@ -141,6 +141,8 @@ export const ingestionRuns = pgTable(
     itemsProcessed: integer("items_processed").default(0),
     itemsCreated: integer("items_created").default(0),
     itemsUpdated: integer("items_updated").default(0),
+    itemsSkipped: integer("items_skipped").default(0),
+    rejectionReasons: jsonb("rejection_reasons").$type<Record<string, number>>().default({}),
     errorMessage: text("error_message"),
     startedAt: timestamp("started_at", { withTimezone: true }).defaultNow().notNull(),
     completedAt: timestamp("completed_at", { withTimezone: true }),

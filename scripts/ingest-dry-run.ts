@@ -3,7 +3,7 @@ loadEnv();
 
 import { getAdapterByName } from "../src/lib/ingestion/adapters";
 import { hasConfirmedDomain } from "../src/lib/ingestion/article-enricher";
-import { evaluateCompanyNameFromTitle } from "../src/lib/ingestion/company-name";
+import { explainNormalizeFailure } from "../src/lib/ingestion/explain-normalize-failure";
 import { computeDiscoveryConfidence } from "../src/lib/scoring/discovery-confidence";
 import { computeParisPresenceScore } from "../src/lib/scoring/paris-presence";
 import type { NormalizedCompany } from "../src/lib/ingestion/types";
@@ -73,12 +73,10 @@ async function runSourceDryRun(sourceName: string) {
     if (!normalized) {
       skippedCount++;
       if (rejectedSamples.length < 5) {
-        const evaluation = evaluateCompanyNameFromTitle(rawItem.title);
-        const topRejection = evaluation.rejected[0];
         rejectedSamples.push({
           title: rawItem.title,
-          candidate: topRejection?.candidate ?? rawItem.title,
-          reason: topRejection?.reason ?? "normalization failed",
+          candidate: rawItem.title,
+          reason: explainNormalizeFailure(rawItem),
         });
       }
       continue;
@@ -125,7 +123,7 @@ async function runSourceDryRun(sourceName: string) {
 }
 
 async function runDryRun() {
-  console.log("Startup Signal — RSS name validation dry run (no database writes)\n");
+  console.log("Startup Signal — ingestion dry run (no database writes)\n");
 
   for (const source of TARGET_SOURCES) {
     await runSourceDryRun(source);

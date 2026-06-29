@@ -9,6 +9,14 @@ import { computeDataHash, extractDomain, normalizeCompanyName, slugify } from ".
 import { buildLogoUrlFromDomain, getCompanyDomain } from "@/lib/company-logo";
 import { computeDiscoveryConfidence } from "@/lib/scoring/discovery-confidence";
 import { computeParisPresenceScore } from "@/lib/scoring/paris-presence";
+import { explainNormalizeFailure } from "./explain-normalize-failure";
+
+function recordRejectionReason(
+  reasons: Record<string, number>,
+  reason: string
+): void {
+  reasons[reason] = (reasons[reason] ?? 0) + 1;
+}
 
 function mergeDiscoverySources(existing: string[] | null | undefined, incoming: string[]): string[] {
   return [...new Set([...(existing ?? []), ...incoming])];
@@ -27,7 +35,7 @@ function buildCompanySnapshot(
   existing?: typeof companies.$inferSelect
 ) {
   const domain = extractDomain(normalized.website) ?? normalized.websiteDomain;
-  const slug = slugify(normalized.name);
+  const slug = existing?.slug ?? slugify(normalized.name);
   const normalizedName = normalized.normalizedName ?? normalizeCompanyName(normalized.name);
   const discoverySources = mergeDiscoverySources(
     existing?.discoverySources,
@@ -120,6 +128,8 @@ export async function ingestFromAdapter(adapter: DataSourceAdapter) {
   let itemsProcessed = 0;
   let itemsCreated = 0;
   let itemsUpdated = 0;
+  let itemsSkipped = 0;
+  const rejectionReasons: Record<string, number> = {};
 
   try {
     const rawItems = await adapter.fetchFundingItems();
@@ -138,7 +148,14 @@ export async function ingestFromAdapter(adapter: DataSourceAdapter) {
         .returning({ id: rawFundingItems.id });
 
       const normalized = await adapter.normalize(rawItem);
-      if (!normalized) continue;
+      if (!normalized) {
+        itemsSkipped++;
+        recordRejectionReason(
+          rejectionReasons,
+          explainNormalizeFailure(rawItem)
+        );
+        continue;
+      }
 
       const result = await upsertCompany(normalized, adapter.sourceName);
 
@@ -160,6 +177,8 @@ export async function ingestFromAdapter(adapter: DataSourceAdapter) {
         itemsProcessed,
         itemsCreated,
         itemsUpdated,
+        itemsSkipped,
+        rejectionReasons,
         completedAt: new Date(),
       })
       .where(eq(ingestionRuns.id, run[0].id));
@@ -175,7 +194,7 @@ export async function ingestFromAdapter(adapter: DataSourceAdapter) {
     throw error;
   }
 
-  return { itemsProcessed, itemsCreated, itemsUpdated };
+  return { itemsProcessed, itemsCreated, itemsUpdated, itemsSkipped, rejectionReasons };
 }
 
 export async function ingestAllSources() {

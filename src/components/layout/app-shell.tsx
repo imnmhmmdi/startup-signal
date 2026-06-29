@@ -9,6 +9,7 @@ import {
   TrendingUp,
   Kanban,
   LogIn,
+  Activity,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
@@ -20,6 +21,7 @@ const ICONS = {
   "/companies": Building2,
   "/funding": TrendingUp,
   "/pipeline": Kanban,
+  "/ingestion": Activity,
 } as const;
 
 type AppShellProps = {

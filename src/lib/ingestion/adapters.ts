@@ -1,5 +1,6 @@
 import Parser from "rss-parser";
 import type { DataSourceAdapter, RawFundingItem, NormalizedCompany } from "./types";
+import { YcAdapter } from "./yc-adapter";
 import {
   enrichFromArticleHtml,
   enrichFromArticleUrl,
@@ -238,8 +239,11 @@ export function getAllAdapters(): DataSourceAdapter[] {
     new TechCrunchAdapter(),
     new CrunchbaseNewsAdapter(),
     new StationFNewsAdapter(),
+    new YcAdapter(),
   ];
 }
+
+export { YcAdapter } from "./yc-adapter";
 
 export function getAdapterByName(sourceName: string): DataSourceAdapter | undefined {
   return getAllAdapters().find((adapter) => adapter.sourceName === sourceName);

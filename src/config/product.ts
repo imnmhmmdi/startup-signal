@@ -12,6 +12,7 @@ export const NAV_ITEMS = [
   { href: "/companies", label: "Companies", description: "Browse funded startups" },
   { href: "/funding", label: "Funding", description: "Recent funding events" },
   { href: "/pipeline", label: "Pipeline", description: "Application workflow" },
+  { href: "/ingestion", label: "Ingestion", description: "RSS discovery pipeline" },
 ] as const;
 
 export function getHiringPrediction(score: number): {

@@ -15,7 +15,9 @@
     "seed": "tsx scripts/seed.ts",
     "backfill:logos": "tsx scripts/backfill-logos.ts",
     "verify:env": "tsx scripts/verify-env.ts",
-    "ingest:dry-run": "tsx scripts/ingest-dry-run.ts"
+    "ingest:dry-run": "tsx scripts/ingest-dry-run.ts",
+    "ingest:run": "tsx scripts/run-ingestion.ts",
+    "ingest:audit": "tsx scripts/audit-ingestion.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.106.0",
