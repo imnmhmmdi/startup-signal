@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import { getCompanyInitials, getCompanyLogoCandidates } from "@/lib/company-logo";
 
@@ -36,11 +36,13 @@ export function CompanyLogo({
 
   const [candidateIndex, setCandidateIndex] = useState(0);
   const [loaded, setLoaded] = useState(false);
+  const [trackedCandidatesKey, setTrackedCandidatesKey] = useState(candidatesKey);
 
-  useEffect(() => {
+  if (trackedCandidatesKey !== candidatesKey) {
+    setTrackedCandidatesKey(candidatesKey);
     setCandidateIndex(0);
     setLoaded(false);
-  }, [candidatesKey]);
+  }
 
   const src = candidates[candidateIndex] ?? null;
   const initials = getCompanyInitials(name);

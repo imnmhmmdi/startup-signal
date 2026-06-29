@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Bookmark, ExternalLink } from "lucide-react";
 import {
@@ -37,13 +38,14 @@ type CompanyTableProps = {
 };
 
 export function CompanyTable({ companies, isAuthenticated }: CompanyTableProps) {
+  const router = useRouter();
   const [savedMap, setSavedMap] = useState<Record<string, boolean>>(
     Object.fromEntries(companies.map((c) => [c.id, !!c.saved]))
   );
 
   const toggleSave = async (companyId: string) => {
     if (!isAuthenticated) {
-      window.location.href = "/login";
+      router.push("/login");
       return;
     }
 
@@ -82,6 +84,8 @@ export function CompanyTable({ companies, isAuthenticated }: CompanyTableProps) 
               <TableHead>Date</TableHead>
               <TableHead>Sector</TableHead>
               <TableHead>Hiring prediction</TableHead>
+              <TableHead className="text-center">Paris</TableHead>
+              <TableHead className="text-center">Confidence</TableHead>
               <TableHead className="text-center">Hiring signal</TableHead>
               <TableHead className="text-center">PM fit</TableHead>
               <TableHead className="text-center">Open roles</TableHead>
@@ -168,6 +172,12 @@ export function CompanyTable({ companies, isAuthenticated }: CompanyTableProps) 
                   >
                     {prediction.label}
                   </span>
+                </TableCell>
+                <TableCell className="text-center">
+                  <ScoreBadge score={company.parisPresenceScore ?? 0} label="Paris presence" />
+                </TableCell>
+                <TableCell className="text-center">
+                  <ScoreBadge score={company.discoveryConfidence ?? 0} label="Confidence" />
                 </TableCell>
                 <TableCell className="text-center">
                   <ScoreBadge score={company.aiHiringScore ?? 0} label="Hiring signal" />
