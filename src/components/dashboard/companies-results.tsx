@@ -1,0 +1,87 @@
+"use client";
+
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { LayoutGrid, TableProperties } from "lucide-react";
+import { CompanyTable } from "@/components/dashboard/company-table";
+import { CompanyCard } from "@/components/companies/company-card";
+import { Button } from "@/components/ui/button";
+import type { Company, SavedStatus } from "@/db/schema";
+
+type CompanyWithSaved = Company & {
+  saved: { id: string; notes: string | null; status: SavedStatus } | null;
+};
+
+export function CompaniesViewToggle() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const view = searchParams.get("view") === "table" ? "table" : "cards";
+
+  const setView = (next: "cards" | "table") => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (next === "cards") {
+      params.delete("view");
+    } else {
+      params.set("view", next);
+    }
+    const query = params.toString();
+    router.push(query ? `${pathname}?${query}` : pathname);
+  };
+
+  return (
+    <div className="flex items-center gap-1 rounded-lg border p-1 bg-muted/30">
+      <Button
+        type="button"
+        variant={view === "cards" ? "secondary" : "ghost"}
+        size="sm"
+        className="h-8 gap-1.5"
+        onClick={() => setView("cards")}
+      >
+        <LayoutGrid className="h-4 w-4" />
+        Cards
+      </Button>
+      <Button
+        type="button"
+        variant={view === "table" ? "secondary" : "ghost"}
+        size="sm"
+        className="h-8 gap-1.5"
+        onClick={() => setView("table")}
+      >
+        <TableProperties className="h-4 w-4" />
+        Table
+      </Button>
+    </div>
+  );
+}
+
+type CompaniesResultsProps = {
+  companies: CompanyWithSaved[];
+  isAuthenticated: boolean;
+  view: "cards" | "table";
+};
+
+export function CompaniesResults({
+  companies,
+  isAuthenticated,
+  view,
+}: CompaniesResultsProps) {
+  if (view === "table") {
+    return <CompanyTable companies={companies} isAuthenticated={isAuthenticated} />;
+  }
+
+  if (companies.length === 0) {
+    return (
+      <div className="rounded-lg border bg-card p-12 text-center">
+        <p className="text-muted-foreground">No companies match your filters.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {companies.map((company) => (
+        <CompanyCard key={company.id} company={company} />
+      ))}
+    </div>
+  );
+}

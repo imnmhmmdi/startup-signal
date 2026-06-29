@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { queryCompanies, getFilterOptions } from "@/lib/queries/companies";
 import { getUser } from "@/lib/supabase/server";
 import { DashboardFilters } from "@/components/dashboard/filters";
-import { CompanyTable } from "@/components/dashboard/company-table";
+import { CompaniesResults, CompaniesViewToggle } from "@/components/dashboard/companies-results";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PRODUCT } from "@/config/product";
 import { PageHeader } from "@/components/layout/page-header";
@@ -16,6 +16,8 @@ type PageProps = {
 export default async function CompaniesPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const user = await getUser();
+
+  const view = params.view === "table" ? "table" : "cards";
 
   const filters = {
     country: params.country ?? PRODUCT.defaultCountry,
@@ -47,7 +49,13 @@ export default async function CompaniesPage({ searchParams }: PageProps) {
         <DashboardFilters filterOptions={filterOptions} defaultCountry={PRODUCT.defaultCountry} />
       </Suspense>
 
-      <CompanyTable companies={companies} isAuthenticated={!!user} />
+      <div className="flex justify-end">
+        <Suspense fallback={<Skeleton className="h-9 w-40" />}>
+          <CompaniesViewToggle />
+        </Suspense>
+      </div>
+
+      <CompaniesResults companies={companies} isAuthenticated={!!user} view={view} />
     </div>
   );
 }
