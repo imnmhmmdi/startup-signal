@@ -1,4 +1,5 @@
-import "dotenv/config";
+import { loadEnv } from "./load-env";
+loadEnv();
 import { ensureDatabaseReady } from "../src/lib/db/bootstrap";
 
 async function main() {

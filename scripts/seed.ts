@@ -1,4 +1,5 @@
-import "dotenv/config";
+import { loadEnv } from "./load-env";
+loadEnv();
 import { ensureDatabaseReady } from "../src/lib/db/bootstrap";
 import { upsertSeedCompany } from "../src/lib/ingestion/ingest-service";
 import { computeAllScores } from "../src/lib/scoring/compute-scores";

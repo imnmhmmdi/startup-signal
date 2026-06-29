@@ -3,7 +3,11 @@
  * Verify env vars without masking failures.
  * Usage: npm run verify:env
  */
-import "dotenv/config";
+import { loadEnv } from "./load-env";
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
+
+loadEnv();
 import { lookup } from "node:dns/promises";
 import postgres from "postgres";
 import {
@@ -168,6 +172,13 @@ async function verifyDatabaseUrl(): Promise<void> {
 }
 
 async function main() {
+  const localEnv = resolve(process.cwd(), ".env.local");
+  if (!existsSync(localEnv)) {
+    console.error(
+      "No .env.local found. Create one from the template:\n\n  cp .env.example .env.local\n\nThen fill in DATABASE_URL, NEXT_PUBLIC_SUPABASE_URL, and NEXT_PUBLIC_SUPABASE_ANON_KEY.\n"
+    );
+  }
+
   console.log("=== Environment variable check ===");
 
   for (const name of REQUIRED) {
