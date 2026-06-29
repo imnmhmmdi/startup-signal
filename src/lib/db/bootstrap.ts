@@ -4,6 +4,7 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import { sql } from "drizzle-orm";
 import { companies } from "@/db/schema";
+import * as schema from "@/db/schema";
 import { upsertSeedCompany } from "@/lib/ingestion/ingest-service";
 import { computeAllScores } from "@/lib/scoring/compute-scores";
 import { SEED_COMPANIES } from "@/lib/db/seed-data";
@@ -41,7 +42,7 @@ async function runBootstrap(options?: { seedIfEmpty?: boolean }): Promise<void> 
   }
 
   const client = postgres(connectionString, { max: 1, prepare: false });
-  const db = drizzle(client);
+  const db = drizzle(client, { schema });
 
   try {
     await client`SELECT pg_advisory_lock(${MIGRATION_LOCK_ID})`;
