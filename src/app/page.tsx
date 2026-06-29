@@ -10,10 +10,26 @@ import {
   getStrongHiringSignals,
 } from "@/lib/queries/dashboard";
 import { StatCard, CompanyCard, FundingEventRow } from "@/components/companies/company-card";
+import { ProfileChip } from "@/components/profile-chip";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 import { PRODUCT } from "@/config/product";
 import { cn } from "@/lib/utils";
+
+function buildBriefingLine(stats: {
+  recentHighPmFit: number;
+  highPmFitCompanies: number;
+  recentFundingEvents: number;
+}): string {
+  if (stats.recentHighPmFit > 0) {
+    const noun = stats.recentHighPmFit === 1 ? "company" : "companies";
+    return `${stats.recentHighPmFit} high-fit ${noun} funded in the last 7 days — ${stats.highPmFitCompanies} total matches for your profile`;
+  }
+  if (stats.highPmFitCompanies > 0) {
+    return `${stats.highPmFitCompanies} companies match your profile at 70+ PM fit — ${stats.recentFundingEvents} funding events to review`;
+  }
+  return `${PRODUCT.tagline} — focused on ${PRODUCT.focusRegion} startups`;
+}
 
 export default async function OverviewPage() {
   const user = await getUser();
@@ -25,13 +41,18 @@ export default async function OverviewPage() {
     getStrongHiringSignals(4),
   ]);
 
+  const briefingLine = buildBriefingLine(stats);
+
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Overview</h1>
-        <p className="text-muted-foreground mt-1">
-          {PRODUCT.tagline} — focused on {PRODUCT.focusRegion} startups
-        </p>
+      <div className="space-y-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Overview</h1>
+            <p className="text-muted-foreground mt-1">{briefingLine}</p>
+          </div>
+          <ProfileChip />
+        </div>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

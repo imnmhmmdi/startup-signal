@@ -60,8 +60,8 @@ export default async function FundingPage() {
                         {company.pmRoles ?? 0} PM · {company.openRolesTotal ?? 0} total roles
                       </span>
                       <div className="ml-auto flex gap-3">
+                        <ScoreBadge score={company.pmFitScore ?? 0} label="PM fit" showTier />
                         <ScoreBadge score={company.aiHiringScore ?? 0} label="Hiring signal" />
-                        <ScoreBadge score={company.pmFitScore ?? 0} label="PM fit" />
                       </div>
                     </div>
                   </CardContent>

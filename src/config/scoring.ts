@@ -36,3 +36,28 @@ export const CATEGORY_BONUS_CATEGORIES = [
 export const FUNDING_RECENCY_DAYS = 180;
 
 export const BASE_PM_FIT_SCORE = 50;
+
+export const SCORE_BREAKDOWN_LABELS: Record<string, string> = {
+  fundingRecency: "Funding recency",
+  fundingAmount: "Funding amount",
+  openRoleCount: "Open roles",
+  aiFocus: "AI focus",
+  categoryBonus: "Sector bonus",
+  seniorPmRoleOpen: "Senior PM role open",
+  aiProductOrInfra: "AI product / infrastructure",
+  b2bSaasOrEnterprise: "B2B / enterprise SaaS",
+  healthcareAi: "Healthcare AI",
+  agenticAiLlmDataPlatform: "Agentic AI / LLM / data platform",
+  marketplace: "Marketplace",
+  seriesBOrLater: "Series B or later",
+  industrialSimulation: "Industrial simulation",
+  embeddedHardware: "Embedded / hardware",
+  defense: "Defense sector",
+  pureConsulting: "Pure consulting",
+  nativeFrenchRequired: "Native French required",
+  onlyResearchRoles: "Research-only roles",
+};
+
+export function getBreakdownLabel(key: string): string {
+  return SCORE_BREAKDOWN_LABELS[key] ?? key.replace(/([A-Z])/g, " $1").trim();
+}

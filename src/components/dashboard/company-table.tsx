@@ -14,6 +14,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScoreBadge, formatFundingAmount, formatDate } from "@/components/score-badge";
+import { getHiringPrediction } from "@/config/product";
 import type { Company, SavedStatus } from "@/db/schema";
 import { cn } from "@/lib/utils";
 
@@ -70,13 +71,16 @@ export function CompanyTable({ companies, isAuthenticated }: CompanyTableProps) 
               <TableHead className="text-right">Amount</TableHead>
               <TableHead>Date</TableHead>
               <TableHead>Sector</TableHead>
+              <TableHead>Hiring prediction</TableHead>
               <TableHead className="text-center">Hiring signal</TableHead>
               <TableHead className="text-center">PM fit</TableHead>
               <TableHead className="text-center">Open roles</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {companies.map((company) => (
+            {companies.map((company) => {
+              const prediction = getHiringPrediction(company.aiHiringScore ?? 0);
+              return (
               <TableRow key={company.id} className="group">
                 <TableCell>
                   <Button
@@ -128,11 +132,23 @@ export function CompanyTable({ companies, isAuthenticated }: CompanyTableProps) 
                     {company.aiCategory ?? "—"}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-center">
-                  <ScoreBadge score={company.aiHiringScore ?? 0} />
+                <TableCell>
+                  <span
+                    className={cn(
+                      "text-sm font-medium",
+                      prediction.label === "High" && "text-emerald-700",
+                      prediction.label === "Moderate" && "text-amber-700",
+                      prediction.label === "Low" && "text-muted-foreground"
+                    )}
+                  >
+                    {prediction.label}
+                  </span>
                 </TableCell>
                 <TableCell className="text-center">
-                  <ScoreBadge score={company.pmFitScore ?? 0} />
+                  <ScoreBadge score={company.aiHiringScore ?? 0} label="Hiring signal" />
+                </TableCell>
+                <TableCell className="text-center">
+                  <ScoreBadge score={company.pmFitScore ?? 0} label="PM fit" showTier />
                 </TableCell>
                 <TableCell className="text-center tabular-nums text-sm">
                   {company.openRolesTotal ?? 0}
@@ -143,7 +159,8 @@ export function CompanyTable({ companies, isAuthenticated }: CompanyTableProps) 
                   )}
                 </TableCell>
               </TableRow>
-            ))}
+            );
+            })}
           </TableBody>
         </Table>
       </div>

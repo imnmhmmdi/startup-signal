@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScoreBadge, formatFundingAmount, formatDate } from "@/components/score-badge";
 import { getHiringPrediction } from "@/config/product";
 import type { Company } from "@/db/schema";
+import { cn } from "@/lib/utils";
 
 type CompanyCardProps = {
   company: Company;
@@ -13,23 +14,37 @@ type CompanyCardProps = {
 
 export function CompanyCard({ company, showPrediction = true }: CompanyCardProps) {
   const prediction = getHiringPrediction(company.aiHiringScore ?? 0);
+  const pmScore = company.pmFitScore ?? 0;
 
   return (
     <Link href={`/companies/${company.id}`}>
-      <Card className="hover:border-primary/30 transition-colors h-full">
+      <Card className="hover:border-primary/30 hover:shadow-sm transition-all h-full flex flex-col">
+        <div
+          className={cn(
+            "flex items-center justify-between gap-3 px-4 py-3 border-b",
+            pmScore >= 75 && "bg-emerald-500/8 border-emerald-200/60",
+            pmScore >= 50 && pmScore < 75 && "bg-amber-500/8 border-amber-200/60",
+            pmScore < 50 && "bg-muted/40 border-border"
+          )}
+        >
+          <ScoreBadge
+            score={pmScore}
+            label="PM fit"
+            size="lg"
+            showTier
+            align="start"
+          />
+        </div>
         <CardHeader className="pb-2">
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <CardTitle className="text-base">{company.name}</CardTitle>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {company.hqCity ? `${company.hqCity}, ` : ""}
-                {company.hqCountry ?? "France"}
-              </p>
-            </div>
-            <ScoreBadge score={company.pmFitScore ?? 0} label="PM Fit" />
+          <div>
+            <CardTitle className="text-base">{company.name}</CardTitle>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {company.hqCity ? `${company.hqCity}, ` : ""}
+              {company.hqCountry ?? "France"}
+            </p>
           </div>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-3 flex-1 flex flex-col">
           <div className="flex flex-wrap gap-1.5">
             {company.fundingRound && (
               <Badge variant="outline" className="text-xs">{company.fundingRound}</Badge>
@@ -51,12 +66,12 @@ export function CompanyCard({ company, showPrediction = true }: CompanyCardProps
             </div>
           </div>
           {showPrediction && (
-            <div className="flex items-center justify-between pt-1 border-t">
+            <div className="flex items-center justify-between pt-1 border-t mt-auto">
               <div>
                 <p className="text-xs text-muted-foreground">Hiring prediction</p>
                 <p className="text-sm font-medium">{prediction.label}</p>
               </div>
-              <ScoreBadge score={company.aiHiringScore ?? 0} label="Signal" />
+              <ScoreBadge score={company.aiHiringScore ?? 0} label="Hiring signal" />
             </div>
           )}
         </CardContent>

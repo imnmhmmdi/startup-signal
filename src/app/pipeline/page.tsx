@@ -45,15 +45,30 @@ type PipelineCompany = Company & {
 export default function PipelinePage() {
   const [companies, setCompanies] = useState<PipelineCompany[]>([]);
   const [loading, setLoading] = useState(true);
+  const [unauthorized, setUnauthorized] = useState(false);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     fetch("/api/saved")
-      .then((r) => r.json())
+      .then((r) => {
+        if (r.status === 401) {
+          setUnauthorized(true);
+          return null;
+        }
+        if (!r.ok) {
+          setError(true);
+          return null;
+        }
+        return r.json();
+      })
       .then((data) => {
-        setCompanies(data.companies ?? []);
+        if (data) setCompanies(data.companies ?? []);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => {
+        setError(true);
+        setLoading(false);
+      });
   }, []);
 
   const updateStatus = async (companyId: string, status: SavedStatus) => {
@@ -78,6 +93,39 @@ export default function PipelinePage() {
 
   if (loading) {
     return <p className="text-muted-foreground">Loading pipeline...</p>;
+  }
+
+  if (unauthorized) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Pipeline</h1>
+          <p className="text-muted-foreground mt-1">
+            Track companies from discovery through application
+          </p>
+        </div>
+        <div className="rounded-lg border bg-card p-12 text-center space-y-3">
+          <Kanban className="h-8 w-8 mx-auto text-muted-foreground" />
+          <p className="text-muted-foreground">Sign in to manage your application pipeline.</p>
+          <Link href="/login" className={cn(buttonVariants({ variant: "default", size: "sm" }))}>
+            Sign in
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Pipeline</h1>
+        </div>
+        <div className="rounded-lg border bg-card p-12 text-center space-y-3">
+          <p className="text-muted-foreground">Unable to load pipeline. Please try again.</p>
+        </div>
+      </div>
+    );
   }
 
   if (companies.length === 0) {
@@ -160,10 +208,10 @@ export default function PipelinePage() {
                   </span>
                 </TableCell>
                 <TableCell className="text-center">
-                  <ScoreBadge score={company.pmFitScore ?? 0} />
+                  <ScoreBadge score={company.pmFitScore ?? 0} label="PM fit" showTier />
                 </TableCell>
                 <TableCell className="text-center">
-                  <ScoreBadge score={company.aiHiringScore ?? 0} />
+                  <ScoreBadge score={company.aiHiringScore ?? 0} label="Hiring signal" />
                 </TableCell>
                 <TableCell>
                   <Select

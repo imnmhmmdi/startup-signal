@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/select";
 import { ScoreBadge, formatFundingAmount, formatDate } from "@/components/score-badge";
 import { getHiringPrediction } from "@/config/product";
+import { getBreakdownLabel } from "@/config/scoring";
 import type { Company, CompanyBriefContent, SavedStatus } from "@/db/schema";
 
 const STATUS_OPTIONS: { value: SavedStatus; label: string }[] = [
@@ -79,14 +80,18 @@ export function CompanyProfile({ company, brief, isAuthenticated }: CompanyProfi
 
   const regenerateBrief = async () => {
     setRegenerating(true);
-    const res = await fetch(`/api/companies/${company.id}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "regenerate_brief" }),
-    });
-    const data = await res.json();
-    setCurrentBrief(data.brief);
-    setRegenerating(false);
+    try {
+      const res = await fetch(`/api/companies/${company.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "regenerate_brief" }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.brief) setCurrentBrief(data.brief);
+    } finally {
+      setRegenerating(false);
+    }
   };
 
   const copyMessage = () => {
@@ -140,12 +145,12 @@ export function CompanyProfile({ company, brief, isAuthenticated }: CompanyProfi
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <Card>
               <CardContent className="pt-4 flex flex-col items-center">
-                <ScoreBadge score={company.aiHiringScore ?? 0} label="Hiring signal" size="md" />
+                <ScoreBadge score={company.pmFitScore ?? 0} label="PM fit" size="md" showTier />
               </CardContent>
             </Card>
             <Card>
               <CardContent className="pt-4 flex flex-col items-center">
-                <ScoreBadge score={company.pmFitScore ?? 0} label="PM fit" size="md" />
+                <ScoreBadge score={company.aiHiringScore ?? 0} label="Hiring signal" size="md" />
               </CardContent>
             </Card>
             <Card>
@@ -261,9 +266,9 @@ export function CompanyProfile({ company, brief, isAuthenticated }: CompanyProfi
               <CardTitle className="text-base">Score Breakdown</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 text-sm">
-              <ScoreBreakdown title="Hiring signal" breakdown={company.aiHiringScoreBreakdown} />
+              <ScoreBreakdown title="PM fit" breakdown={company.pmFitScoreBreakdown} />
               <Separator />
-              <ScoreBreakdown title="PM fit score" breakdown={company.pmFitScoreBreakdown} />
+              <ScoreBreakdown title="Hiring signal" breakdown={company.aiHiringScoreBreakdown} />
             </CardContent>
           </Card>
 
@@ -331,10 +336,8 @@ function ScoreBreakdown({
       <p className="font-medium mb-2">{title}</p>
       <div className="space-y-1">
         {Object.entries(breakdown).map(([key, value]) => (
-          <div key={key} className="flex justify-between">
-            <span className="text-muted-foreground capitalize">
-              {key.replace(/([A-Z])/g, " $1").trim()}
-            </span>
+          <div key={key} className="flex justify-between gap-4">
+            <span className="text-muted-foreground">{getBreakdownLabel(key)}</span>
             <span className={cn("tabular-nums font-medium", value < 0 && "text-red-600")}>
               {value > 0 ? "+" : ""}{value}
             </span>

@@ -6,9 +6,17 @@ import { PRODUCT } from "@/config/product";
 const SIX_MONTHS_AGO = new Date();
 SIX_MONTHS_AGO.setMonth(SIX_MONTHS_AGO.getMonth() - 6);
 
+function daysAgo(days: number): Date {
+  const date = new Date();
+  date.setDate(date.getDate() - days);
+  return date;
+}
+
 export async function getOverviewStats(userId?: string) {
   const frenchCondition = eq(companies.hqCountry, PRODUCT.defaultCountry);
   const recentFunding = gte(companies.fundingDate, SIX_MONTHS_AGO);
+
+  const oneWeekAgo = daysAgo(7);
 
   const [
     frenchCount,
@@ -16,6 +24,7 @@ export async function getOverviewStats(userId?: string) {
     highPmFit,
     openPmRoles,
     pipelineCount,
+    recentHighPmFit,
   ] = await Promise.all([
     db
       .select({ count: sql<number>`count(*)::int` })
@@ -44,6 +53,17 @@ export async function getOverviewStats(userId?: string) {
           .where(eq(savedCompanies.userId, userId))
           .then((r) => r[0].count)
       : Promise.resolve(0),
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(companies)
+      .where(
+        and(
+          frenchCondition,
+          gte(companies.pmFitScore, 70),
+          gte(companies.fundingDate, oneWeekAgo)
+        )
+      )
+      .then((r) => r[0].count),
   ]);
 
   return {
@@ -52,6 +72,7 @@ export async function getOverviewStats(userId?: string) {
     highPmFitCompanies: highPmFit,
     openPmRoles,
     pipelineCount,
+    recentHighPmFit,
   };
 }
 
