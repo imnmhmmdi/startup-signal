@@ -6,13 +6,6 @@ export async function register() {
     return;
   }
 
-  // Only bootstrap when explicitly requested — avoids blocking dev server startup
-  // and exhausting DB connections on every cold start.
-  // Run once: RUN_DB_BOOTSTRAP=true npm run dev  OR  npm run db:bootstrap
-  if (process.env.RUN_DB_BOOTSTRAP !== "true") {
-    return;
-  }
-
   const { validateDatabaseConfig } = await import("@/lib/db/validate-config");
   const config = validateDatabaseConfig();
 
@@ -21,11 +14,27 @@ export async function register() {
     return;
   }
 
+  const shouldRunMigrations =
+    process.env.VERCEL === "1" || process.env.RUN_DB_BOOTSTRAP === "true";
+  const shouldRunFullBootstrap = process.env.RUN_DB_BOOTSTRAP === "true";
+
+  if (!shouldRunMigrations && !shouldRunFullBootstrap) {
+    return;
+  }
+
   try {
-    const { ensureDatabaseReady } = await import("@/lib/db/bootstrap");
-    await ensureDatabaseReady();
+    const { ensureDatabaseReady, runDatabaseMigrations } = await import(
+      "@/lib/db/bootstrap"
+    );
+
+    if (shouldRunFullBootstrap) {
+      await ensureDatabaseReady();
+      return;
+    }
+
+    await runDatabaseMigrations();
   } catch (error) {
     const { formatDatabaseConnectionError } = await import("@/lib/db/validate-config");
-    console.error("[db] Bootstrap failed:", formatDatabaseConnectionError(error));
+    console.error("[db] Startup database setup failed:", formatDatabaseConnectionError(error));
   }
 }

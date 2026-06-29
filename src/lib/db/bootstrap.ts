@@ -22,8 +22,29 @@ const REQUIRED_TABLES = [
   "ingestion_runs",
   "raw_funding_items",
 ] as const;
+const REQUIRED_COMPANY_COLUMNS = [
+  "normalized_name",
+  "discovery_sources",
+  "discovery_confidence",
+  "paris_presence_score",
+  "paris_presence_breakdown",
+] as const;
 
 let bootstrapPromise: Promise<void> | null = null;
+let migrationPromise: Promise<void> | null = null;
+
+export async function runDatabaseMigrations(): Promise<void> {
+  if (migrationPromise) {
+    return migrationPromise;
+  }
+
+  migrationPromise = applyMigrations().catch((error) => {
+    migrationPromise = null;
+    throw error;
+  });
+
+  return migrationPromise;
+}
 
 export async function ensureDatabaseReady(options?: {
   seedIfEmpty?: boolean;
@@ -40,14 +61,13 @@ export async function ensureDatabaseReady(options?: {
   return bootstrapPromise;
 }
 
-async function runBootstrap(options?: { seedIfEmpty?: boolean }): Promise<void> {
+async function applyMigrations(): Promise<void> {
   const config = validateDatabaseConfig();
   if (!config.valid) {
     throw new Error(config.error);
   }
 
   const connectionString = process.env.DATABASE_URL!;
-
   const client = postgres(connectionString, {
     max: 1,
     prepare: false,
@@ -67,7 +87,35 @@ async function runBootstrap(options?: { seedIfEmpty?: boolean }): Promise<void> 
     });
 
     await assertRequiredTables(client);
+    await assertRequiredCompanyColumns(client);
+  } catch (error) {
+    throw new Error(formatDatabaseConnectionError(error), { cause: error });
+  } finally {
+    const useAdvisoryLock = !POOLER_HOST_PATTERN.test(config.hostname ?? "");
+    if (useAdvisoryLock) {
+      await client`SELECT pg_advisory_unlock(${MIGRATION_LOCK_ID})`.catch(() => undefined);
+    }
+    await client.end();
+  }
+}
 
+async function runBootstrap(options?: { seedIfEmpty?: boolean }): Promise<void> {
+  await runDatabaseMigrations();
+
+  const config = validateDatabaseConfig();
+  if (!config.valid) {
+    throw new Error(config.error);
+  }
+
+  const connectionString = process.env.DATABASE_URL!;
+  const client = postgres(connectionString, {
+    max: 1,
+    prepare: false,
+    connect_timeout: 10,
+  });
+  const db = drizzle(client, { schema });
+
+  try {
     const shouldSeed =
       options?.seedIfEmpty !== false &&
       process.env.SEED_ON_DEPLOY !== "false" &&
@@ -95,10 +143,6 @@ async function runBootstrap(options?: { seedIfEmpty?: boolean }): Promise<void> 
   } catch (error) {
     throw new Error(formatDatabaseConnectionError(error), { cause: error });
   } finally {
-    const useAdvisoryLock = !POOLER_HOST_PATTERN.test(config.hostname ?? "");
-    if (useAdvisoryLock) {
-      await client`SELECT pg_advisory_unlock(${MIGRATION_LOCK_ID})`.catch(() => undefined);
-    }
     await client.end();
   }
 }
@@ -130,9 +174,48 @@ async function assertRequiredTables(
   }
 }
 
+async function assertRequiredCompanyColumns(
+  client: postgres.Sql
+): Promise<void> {
+  const rows = await client<{ column_name: string }[]>`
+    SELECT column_name
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'companies'
+      AND column_name IN ${client(REQUIRED_COMPANY_COLUMNS)}
+  `;
+
+  const found = new Set(rows.map((row) => row.column_name));
+  const missing = REQUIRED_COMPANY_COLUMNS.filter((column) => !found.has(column));
+
+  if (missing.length > 0) {
+    throw new Error(
+      `Database schema out of date. Missing companies columns: ${missing.join(", ")}`
+    );
+  }
+}
+
+async function getCompanyColumnStatus(
+  client: postgres.Sql
+): Promise<Record<(typeof REQUIRED_COMPANY_COLUMNS)[number], boolean>> {
+  const rows = await client<{ column_name: string }[]>`
+    SELECT column_name
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'companies'
+      AND column_name IN ${client(REQUIRED_COMPANY_COLUMNS)}
+  `;
+
+  const found = new Set(rows.map((row) => row.column_name));
+  return Object.fromEntries(
+    REQUIRED_COMPANY_COLUMNS.map((column) => [column, found.has(column)])
+  ) as Record<(typeof REQUIRED_COMPANY_COLUMNS)[number], boolean>;
+}
+
 export async function getDatabaseStatus(): Promise<{
   ready: boolean;
   tables: Record<string, boolean>;
+  companyColumns: Record<(typeof REQUIRED_COMPANY_COLUMNS)[number], boolean>;
   companyCount: number;
   config: ReturnType<typeof validateDatabaseConfig>;
   error?: string;
@@ -142,6 +225,9 @@ export async function getDatabaseStatus(): Promise<{
     return {
       ready: false,
       tables: {},
+      companyColumns: Object.fromEntries(
+        REQUIRED_COMPANY_COLUMNS.map((column) => [column, false])
+      ) as Record<(typeof REQUIRED_COMPANY_COLUMNS)[number], boolean>,
       companyCount: 0,
       config,
       error: config.error,
@@ -169,16 +255,26 @@ export async function getDatabaseStatus(): Promise<{
     ) as Record<(typeof REQUIRED_TABLES)[number], boolean>;
 
     let companyCount = 0;
+    let companyColumns = Object.fromEntries(
+      REQUIRED_COMPANY_COLUMNS.map((column) => [column, false])
+    ) as Record<(typeof REQUIRED_COMPANY_COLUMNS)[number], boolean>;
+
     if (tables.companies) {
       const [result] = await client<{ count: number }[]>`
         SELECT count(*)::int AS count FROM companies
       `;
       companyCount = result?.count ?? 0;
+      companyColumns = await getCompanyColumnStatus(client);
     }
 
+    const schemaReady =
+      REQUIRED_TABLES.every((table) => tables[table]) &&
+      REQUIRED_COMPANY_COLUMNS.every((column) => companyColumns[column]);
+
     return {
-      ready: REQUIRED_TABLES.every((table) => tables[table]),
+      ready: schemaReady,
       tables,
+      companyColumns,
       companyCount,
       config,
     };
@@ -186,6 +282,9 @@ export async function getDatabaseStatus(): Promise<{
     return {
       ready: false,
       tables: {},
+      companyColumns: Object.fromEntries(
+        REQUIRED_COMPANY_COLUMNS.map((column) => [column, false])
+      ) as Record<(typeof REQUIRED_COMPANY_COLUMNS)[number], boolean>,
       companyCount: 0,
       config,
       error: formatDatabaseConnectionError(error),
