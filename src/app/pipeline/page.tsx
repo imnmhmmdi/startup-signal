@@ -25,6 +25,7 @@ import { buttonVariants } from "@/components/ui/button";
 import type { Company, SavedStatus } from "@/db/schema";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/layout/page-header";
+import { PipelineLoadingSkeleton } from "@/components/pipeline/pipeline-loading";
 
 const PIPELINE_STAGES: {
   value: SavedStatus;
@@ -93,7 +94,7 @@ export default function PipelinePage() {
   }));
 
   if (loading) {
-    return <p className="text-muted-foreground">Loading pipeline...</p>;
+    return <PipelineLoadingSkeleton />;
   }
 
   if (unauthorized) {
