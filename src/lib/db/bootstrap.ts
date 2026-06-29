@@ -8,6 +8,10 @@ import * as schema from "@/db/schema";
 import { upsertSeedCompany } from "@/lib/ingestion/ingest-service";
 import { computeAllScores } from "@/lib/scoring/compute-scores";
 import { SEED_COMPANIES } from "@/lib/db/seed-data";
+import {
+  formatDatabaseConnectionError,
+  validateDatabaseConfig,
+} from "@/lib/db/validate-config";
 
 const MIGRATION_LOCK_ID = 8347291;
 const REQUIRED_TABLES = [
@@ -36,12 +40,18 @@ export async function ensureDatabaseReady(options?: {
 }
 
 async function runBootstrap(options?: { seedIfEmpty?: boolean }): Promise<void> {
-  const connectionString = process.env.DATABASE_URL;
-  if (!connectionString) {
-    throw new Error("DATABASE_URL environment variable is not set");
+  const config = validateDatabaseConfig();
+  if (!config.valid) {
+    throw new Error(config.error);
   }
 
-  const client = postgres(connectionString, { max: 1, prepare: false });
+  const connectionString = process.env.DATABASE_URL!;
+
+  const client = postgres(connectionString, {
+    max: 1,
+    prepare: false,
+    connect_timeout: 10,
+  });
   const db = drizzle(client, { schema });
 
   try {
@@ -74,6 +84,8 @@ async function runBootstrap(options?: { seedIfEmpty?: boolean }): Promise<void> 
         `[db] Seed complete: ${created} created, ${updated} updated, ${scored} scored`
       );
     }
+  } catch (error) {
+    throw new Error(formatDatabaseConnectionError(error), { cause: error });
   } finally {
     await client`SELECT pg_advisory_unlock(${MIGRATION_LOCK_ID})`.catch(() => undefined);
     await client.end();
@@ -111,13 +123,26 @@ export async function getDatabaseStatus(): Promise<{
   ready: boolean;
   tables: Record<string, boolean>;
   companyCount: number;
+  config: ReturnType<typeof validateDatabaseConfig>;
+  error?: string;
 }> {
-  const connectionString = process.env.DATABASE_URL;
-  if (!connectionString) {
-    return { ready: false, tables: {}, companyCount: 0 };
+  const config = validateDatabaseConfig();
+  if (!config.valid) {
+    return {
+      ready: false,
+      tables: {},
+      companyCount: 0,
+      config,
+      error: config.error,
+    };
   }
 
-  const client = postgres(connectionString, { max: 1, prepare: false });
+  const connectionString = process.env.DATABASE_URL!;
+  const client = postgres(connectionString, {
+    max: 1,
+    prepare: false,
+    connect_timeout: 10,
+  });
 
   try {
     const rows = await client<{ table_name: string }[]>`
@@ -144,6 +169,15 @@ export async function getDatabaseStatus(): Promise<{
       ready: REQUIRED_TABLES.every((table) => tables[table]),
       tables,
       companyCount,
+      config,
+    };
+  } catch (error) {
+    return {
+      ready: false,
+      tables: {},
+      companyCount: 0,
+      config,
+      error: formatDatabaseConnectionError(error),
     };
   } finally {
     await client.end();
