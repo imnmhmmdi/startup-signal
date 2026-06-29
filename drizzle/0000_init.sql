@@ -1,5 +1,14 @@
-CREATE TYPE "public"."saved_status" AS ENUM('new', 'contacted', 'applied', 'interview', 'rejected', 'offer');
-CREATE TYPE "public"."job_status" AS ENUM('pending', 'running', 'completed', 'failed');
+DO $$ BEGIN
+  CREATE TYPE "public"."saved_status" AS ENUM('new', 'contacted', 'applied', 'interview', 'rejected', 'offer');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE "public"."job_status" AS ENUM('pending', 'running', 'completed', 'failed');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 
 CREATE TABLE IF NOT EXISTS "companies" (
   "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
@@ -102,23 +111,32 @@ CREATE TABLE IF NOT EXISTS "raw_funding_items" (
 
 CREATE UNIQUE INDEX IF NOT EXISTS "raw_funding_items_source_external_idx" ON "raw_funding_items" ("source_name", "external_id");
 
--- Row Level Security
 ALTER TABLE "companies" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "company_briefs" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "saved_companies" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "ingestion_runs" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "raw_funding_items" ENABLE ROW LEVEL SECURITY;
 
--- Public read access for companies and briefs
+DROP POLICY IF EXISTS "companies_public_read" ON "companies";
 CREATE POLICY "companies_public_read" ON "companies" FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "company_briefs_public_read" ON "company_briefs";
 CREATE POLICY "company_briefs_public_read" ON "company_briefs" FOR SELECT USING (true);
 
--- Saved companies: users can only access their own
+DROP POLICY IF EXISTS "saved_companies_select_own" ON "saved_companies";
 CREATE POLICY "saved_companies_select_own" ON "saved_companies" FOR SELECT USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "saved_companies_insert_own" ON "saved_companies";
 CREATE POLICY "saved_companies_insert_own" ON "saved_companies" FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "saved_companies_update_own" ON "saved_companies";
 CREATE POLICY "saved_companies_update_own" ON "saved_companies" FOR UPDATE USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "saved_companies_delete_own" ON "saved_companies";
 CREATE POLICY "saved_companies_delete_own" ON "saved_companies" FOR DELETE USING (auth.uid() = user_id);
 
--- Service role handles ingestion (no public policies on ingestion tables)
+DROP POLICY IF EXISTS "ingestion_runs_service" ON "ingestion_runs";
 CREATE POLICY "ingestion_runs_service" ON "ingestion_runs" FOR ALL USING (false);
+
+DROP POLICY IF EXISTS "raw_funding_items_service" ON "raw_funding_items";
 CREATE POLICY "raw_funding_items_service" ON "raw_funding_items" FOR ALL USING (false);

@@ -16,6 +16,22 @@ Hiring intelligence for senior Product Managers — track French tech startups, 
 
 Next.js 16 · TypeScript · Tailwind · shadcn/ui · Supabase · Drizzle ORM · Vercel Cron · Anthropic SDK
 
+## Database schema
+
+Schema is managed with **Drizzle ORM**. Migration SQL lives in `drizzle/0000_init.sql`.
+
+**Tables used by the app:**
+
+| Table | Purpose |
+|-------|---------|
+| `companies` | Primary entity — funding, hiring, scores |
+| `company_briefs` | LLM-generated company briefs |
+| `saved_companies` | User pipeline / watchlist (status workflow) |
+| `ingestion_runs` | Cron job run history |
+| `raw_funding_items` | Raw RSS feed items before normalization |
+
+Users are managed by **Supabase Auth** (`auth.users`). There are no separate `users`, `profiles`, `funding`, or `pipeline` tables — those are UI routes backed by the tables above.
+
 ## Setup
 
 ```bash
@@ -23,8 +39,8 @@ git clone https://github.com/imnmhmmdi/startup-signal.git
 cd startup-signal
 npm install
 cp .env.example .env.local
-npm run db:push   # or run drizzle/0000_init.sql in Supabase
-npm run seed
+# Set DATABASE_URL to your Supabase direct Postgres URL (port 5432)
+npm run db:bootstrap   # applies migrations + seeds if empty
 npm run dev
 ```
 
@@ -43,4 +59,16 @@ Legacy routes from the old idea-browser app redirect automatically (`/dashboard`
 
 ## Deploy
 
-Push to `main` on GitHub → Vercel auto-deploys. Set env vars in Vercel dashboard. Promote latest deployment to production if needed.
+Push to `main` on GitHub → Vercel auto-deploys.
+
+**Required Vercel environment variables:**
+
+- `DATABASE_URL` — Supabase **direct** Postgres connection string (port 5432)
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `CRON_SECRET`
+- `ANTHROPIC_API_KEY` (optional, for company briefs)
+
+Migrations run automatically during `npm run build` and again at server startup via `instrumentation.ts`. If the `companies` table is empty, seed data is loaded automatically (`SEED_ON_DEPLOY=true` by default).
+
+Verify deployment: `GET /api/health` returns `"database": { "ready": true, "companyCount": 59 }`.

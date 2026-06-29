@@ -1,10 +1,13 @@
 import "dotenv/config";
+import { ensureDatabaseReady } from "../src/lib/db/bootstrap";
 import { upsertSeedCompany } from "../src/lib/ingestion/ingest-service";
 import { computeAllScores } from "../src/lib/scoring/compute-scores";
 import { db } from "../src/db";
-import { SEED_COMPANIES } from "./seed-data";
+import { SEED_COMPANIES } from "../src/lib/db/seed-data";
 
 async function main() {
+  await ensureDatabaseReady({ seedIfEmpty: false });
+
   console.log(`Seeding ${SEED_COMPANIES.length} companies...`);
 
   let created = 0;
