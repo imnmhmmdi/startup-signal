@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ScoreBadge, formatFundingAmount, formatDate } from "@/components/score-badge";
+import { getHiringPrediction } from "@/config/product";
 import type { Company, CompanyBriefContent, SavedStatus } from "@/db/schema";
 
 const STATUS_OPTIONS: { value: SavedStatus; label: string }[] = [
@@ -50,6 +51,7 @@ export function CompanyProfile({ company, brief, isAuthenticated }: CompanyProfi
   const [copied, setCopied] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [currentBrief, setCurrentBrief] = useState(brief);
+  const prediction = getHiringPrediction(company.aiHiringScore ?? 0);
 
   const toggleSave = async () => {
     if (!isAuthenticated) {
@@ -100,11 +102,11 @@ export function CompanyProfile({ company, brief, isAuthenticated }: CompanyProfi
       <div className="flex items-start justify-between gap-4">
         <div>
           <Link
-            href="/"
+            href="/companies"
             className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-3"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to dashboard
+            Back to companies
           </Link>
           <h1 className="text-2xl font-bold tracking-tight">{company.name}</h1>
           <div className="flex flex-wrap items-center gap-2 mt-2">
@@ -128,7 +130,7 @@ export function CompanyProfile({ company, brief, isAuthenticated }: CompanyProfi
           )}
           <Button variant={isSaved ? "default" : "outline"} size="sm" onClick={toggleSave}>
             <Bookmark className={cn("h-4 w-4 mr-1.5", isSaved && "fill-current")} />
-            {isSaved ? "Saved" : "Save"}
+            {isSaved ? "In pipeline" : "Add to pipeline"}
           </Button>
         </div>
       </div>
@@ -138,26 +140,24 @@ export function CompanyProfile({ company, brief, isAuthenticated }: CompanyProfi
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <Card>
               <CardContent className="pt-4 flex flex-col items-center">
-                <ScoreBadge score={company.aiHiringScore ?? 0} label="AI Hiring" size="md" />
+                <ScoreBadge score={company.aiHiringScore ?? 0} label="Hiring signal" size="md" />
               </CardContent>
             </Card>
             <Card>
               <CardContent className="pt-4 flex flex-col items-center">
-                <ScoreBadge score={company.pmFitScore ?? 0} label="PM Fit" size="md" />
+                <ScoreBadge score={company.pmFitScore ?? 0} label="PM fit" size="md" />
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4 text-center">
+                <p className="text-sm font-semibold">{prediction.label}</p>
+                <p className="text-xs text-muted-foreground mt-1">Hiring prediction</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="pt-4 text-center">
                 <p className="text-2xl font-bold tabular-nums">{company.openRolesTotal ?? 0}</p>
-                <p className="text-xs text-muted-foreground mt-1">Open Roles</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-4 text-center">
-                <p className="text-2xl font-bold tabular-nums">
-                  {formatFundingAmount(company.fundingAmountUsd)}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">Raised</p>
+                <p className="text-xs text-muted-foreground mt-1">Open roles</p>
               </CardContent>
             </Card>
           </div>
@@ -213,7 +213,7 @@ export function CompanyProfile({ company, brief, isAuthenticated }: CompanyProfi
           {currentBrief && (
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-base">AI Career Brief</CardTitle>
+                <CardTitle className="text-base">Company brief</CardTitle>
                 <Button variant="ghost" size="sm" onClick={regenerateBrief} disabled={regenerating}>
                   <RefreshCw className={cn("h-4 w-4 mr-1.5", regenerating && "animate-spin")} />
                   Regenerate
@@ -261,16 +261,16 @@ export function CompanyProfile({ company, brief, isAuthenticated }: CompanyProfi
               <CardTitle className="text-base">Score Breakdown</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 text-sm">
-              <ScoreBreakdown title="AI Hiring Score" breakdown={company.aiHiringScoreBreakdown} />
+              <ScoreBreakdown title="Hiring signal" breakdown={company.aiHiringScoreBreakdown} />
               <Separator />
-              <ScoreBreakdown title="PM Fit Score" breakdown={company.pmFitScoreBreakdown} />
+              <ScoreBreakdown title="PM fit score" breakdown={company.pmFitScoreBreakdown} />
             </CardContent>
           </Card>
 
           {isAuthenticated && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Notes & Status</CardTitle>
+                <CardTitle className="text-base">Application workflow</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <Select value={status} onValueChange={(v) => setStatus(v as SavedStatus)}>

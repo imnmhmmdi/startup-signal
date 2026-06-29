@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Radio } from "lucide-react";
+import { PRODUCT } from "@/config/product";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -44,17 +45,17 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-[60vh] items-center justify-center">
+    <div className="flex min-h-screen items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-2">
             <Radio className="h-8 w-8 text-primary" />
           </div>
-          <CardTitle>{isSignUp ? "Join Startup Signal" : "Sign in to Startup Signal"}</CardTitle>
+          <CardTitle>{isSignUp ? `Join ${PRODUCT.name}` : `Sign in to ${PRODUCT.name}`}</CardTitle>
           <CardDescription>
             {isSignUp
-              ? "Create an account to save companies and track applications"
-              : "Sign in to save companies and add notes"}
+              ? "Create an account to track companies and manage your application pipeline"
+              : "Sign in to save companies, add notes, and track applications"}
           </CardDescription>
         </CardHeader>
         <CardContent>

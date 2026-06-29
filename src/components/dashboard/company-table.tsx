@@ -69,10 +69,10 @@ export function CompanyTable({ companies, isAuthenticated }: CompanyTableProps) 
               <TableHead>Round</TableHead>
               <TableHead className="text-right">Amount</TableHead>
               <TableHead>Date</TableHead>
-              <TableHead>AI Category</TableHead>
-              <TableHead className="text-center">AI Hiring</TableHead>
-              <TableHead className="text-center">PM Fit</TableHead>
-              <TableHead className="text-center">Roles</TableHead>
+              <TableHead>Sector</TableHead>
+              <TableHead className="text-center">Hiring signal</TableHead>
+              <TableHead className="text-center">PM fit</TableHead>
+              <TableHead className="text-center">Open roles</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

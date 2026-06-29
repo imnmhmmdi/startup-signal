@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { Header } from "@/components/layout/header";
+import { AppShell } from "@/components/layout/app-shell";
 import { getUser } from "@/lib/supabase/server";
+import { PRODUCT } from "@/config/product";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Startup Signal",
-  description: "Discover European AI startups likely to hire Product Managers",
+  title: PRODUCT.name,
+  description: PRODUCT.description,
 };
 
 export default async function RootLayout({
@@ -31,11 +32,8 @@ export default async function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
-        <Header userEmail={user?.email} />
-        <main className="flex-1 mx-auto w-full max-w-7xl px-4 sm:px-6 py-6">
-          {children}
-        </main>
+      <body className="min-h-full">
+        <AppShell userEmail={user?.email}>{children}</AppShell>
       </body>
     </html>
   );
