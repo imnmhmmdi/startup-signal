@@ -1,7 +1,22 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+const LEGACY_REDIRECTS: Record<string, string> = {
+  "/dashboard": "/",
+  "/signal-hunter": "/companies",
+  "/watchlist": "/pipeline",
+  "/competitor-scan": "/companies",
+  "/settings": "/pipeline",
+  "/saved": "/pipeline",
+};
+
 export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  const destination = LEGACY_REDIRECTS[pathname];
+  if (destination) {
+    return NextResponse.redirect(new URL(destination, request.url), 308);
+  }
+
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     return NextResponse.next();
   }
