@@ -42,7 +42,7 @@ export default async function CompaniesPage({ searchParams }: PageProps) {
     <div className="space-y-6">
       <PageHeader
         title="Companies"
-        subtitle={`${companies.length} ${PRODUCT.focusRegion} startups — ranked by PM fit and hiring signal`}
+        subtitle={`${companies.length} Paris ecosystem opportunities — ranked by PM fit and hiring signal`}
       />
 
           <Suspense fallback={<Skeleton className="h-48 w-full rounded-xl" />}>

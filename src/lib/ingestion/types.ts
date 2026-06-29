@@ -7,6 +7,8 @@ export type RawFundingItem = {
   raw: Record<string, unknown>;
 };
 
+export type SourceKind = "rss" | "seed" | "api";
+
 export type NormalizedCompany = {
   name: string;
   website?: string;
@@ -34,6 +36,9 @@ export type NormalizedCompany = {
   visaSponsorship?: boolean;
   languagesRequired?: string[];
   description?: string;
+  normalizedName?: string;
+  discoverySources?: string[];
+  sourceKind?: SourceKind;
   sources: Record<string, { value: unknown; source: string; fetchedAt: string }>;
 };
 

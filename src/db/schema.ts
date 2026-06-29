@@ -58,6 +58,13 @@ export const companies = pgTable(
     workMode: text("work_mode"),
     visaSponsorship: boolean("visa_sponsorship"),
     languagesRequired: jsonb("languages_required").$type<string[]>().default([]),
+    normalizedName: text("normalized_name"),
+    discoverySources: jsonb("discovery_sources").$type<string[]>().default([]),
+    discoveryConfidence: integer("discovery_confidence").default(0),
+    parisPresenceScore: integer("paris_presence_score").default(0),
+    parisPresenceBreakdown: jsonb("paris_presence_breakdown").$type<
+      Record<string, number>
+    >(),
     sources: jsonb("sources")
       .$type<Record<string, { value: unknown; source: string; fetchedAt: string }>>()
       .default({}),
@@ -84,6 +91,9 @@ export const companies = pgTable(
     index("companies_ai_hiring_score_idx").on(table.aiHiringScore),
     index("companies_pm_fit_score_idx").on(table.pmFitScore),
     index("companies_name_idx").on(table.name),
+    index("companies_normalized_name_idx").on(table.normalizedName),
+    index("companies_paris_presence_score_idx").on(table.parisPresenceScore),
+    index("companies_discovery_confidence_idx").on(table.discoveryConfidence),
   ]
 );
 

@@ -17,9 +17,84 @@ export function slugify(name: string): string {
     .replace(/(^-|-$)/g, "");
 }
 
+const LEGAL_SUFFIXES =
+  /\b(incorporated|corporation|company|limited|inc|corp|ltd|llc|plc|gmbh|sas|sarl|sa|bv|ag|se|spa|pty|co)\b\.?/gi;
+
+export function normalizeCompanyName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(LEGAL_SUFFIXES, "")
+    .replace(/['"]/g, "")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function normalizeLinkedInSlug(url: string | undefined | null): string | undefined {
+  if (!url) return undefined;
+  const match = url.match(/linkedin\.com\/company\/([^/?#]+)/i);
+  return match?.[1]?.toLowerCase().replace(/\/$/, "");
+}
+
+const PUBLISHER_LINKEDIN_SLUGS = new Set([
+  "siftedeu",
+  "tech-eu",
+  "eu-startups-com",
+  "maddyness",
+  "techcrunch",
+  "crunchbase",
+  "stationf",
+]);
+
+export function extractLinkedInCompanyUrl(text: string): string | undefined {
+  const matches =
+    text.match(
+      /https?:\/\/(?:[\w-]+\.)?linkedin\.com\/company\/[a-z0-9-]+(?:\/[^"'<\s]*)?/gi
+    ) ?? [];
+
+  for (const rawUrl of matches) {
+    const url = rawUrl.split(/[<"']/)[0];
+    const slug = normalizeLinkedInSlug(url);
+    if (slug && !PUBLISHER_LINKEDIN_SLUGS.has(slug)) {
+      return url;
+    }
+  }
+
+  return undefined;
+}
+
+export function extractWebsiteFromText(text: string): string | undefined {
+  const hrefMatches = text.match(/https?:\/\/[^\s"'<>]+/gi) ?? [];
+  const blockedHosts =
+    /linkedin\.com|twitter\.com|x\.com|facebook\.com|youtube\.com|instagram\.com|medium\.com|substack\.com|google\.com|googleapis\.com|googletagmanager\.com|gstatic\.com|doubleclick\.net|apple\.com|wikipedia\.org|techcrunch\.com|sifted\.eu|maddyness\.com|eu-startups\.com|tech\.eu|crunchbase\.com|stationf\.co|wp\.com|gravatar\.com/i;
+
+  for (const rawUrl of hrefMatches) {
+    const cleaned = rawUrl.replace(/[),.;]+$/, "");
+    try {
+      const parsed = new URL(cleaned);
+      if (blockedHosts.test(parsed.hostname)) continue;
+      if (parsed.pathname.length > 120) continue;
+      return cleaned;
+    } catch {
+      continue;
+    }
+  }
+
+  return undefined;
+}
+
 export function computeDataHash(data: Record<string, unknown>): string {
   return createHash("sha256").update(JSON.stringify(data)).digest("hex").slice(0, 16);
 }
+
+export {
+  extractCompanyName,
+  isValidCompanyName,
+  evaluateCompanyNameFromTitle,
+  type CompanyNameValidationContext,
+  type CompanyNameEvaluation,
+  type CompanyNameRejection,
+} from "./company-name";
 
 export function parseFundingAmount(text: string): number | undefined {
   const normalized = text.toLowerCase().replace(/,/g, "");
@@ -45,25 +120,6 @@ export function parseFundingRound(text: string): string | undefined {
   if (/\bseed\b/i.test(normalized)) return "Seed";
   if (/growth/i.test(normalized)) return "Growth";
   if (/grant/i.test(normalized)) return "Grant";
-  return undefined;
-}
-
-export function extractCompanyName(title: string): string | undefined {
-  const patterns = [
-    /^(.+?)\s+(?:raises|raised|secures|bags|lands|closes|gets|snags)\s/i,
-    /^(.+?)\s+(?:funding|investment|round)/i,
-    /(?:funding for|investment in)\s+(.+?)(?:\s*[,.]|$)/i,
-  ];
-
-  for (const pattern of patterns) {
-    const match = title.match(pattern);
-    if (match?.[1]) {
-      return match[1].trim().replace(/['"]/g, "");
-    }
-  }
-
-  const firstPart = title.split(/[,:–—-]/)[0]?.trim();
-  if (firstPart && firstPart.length < 60) return firstPart;
   return undefined;
 }
 

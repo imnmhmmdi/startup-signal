@@ -14,7 +14,8 @@
     "db:studio": "drizzle-kit studio",
     "seed": "tsx scripts/seed.ts",
     "backfill:logos": "tsx scripts/backfill-logos.ts",
-    "verify:env": "tsx scripts/verify-env.ts"
+    "verify:env": "tsx scripts/verify-env.ts",
+    "ingest:dry-run": "tsx scripts/ingest-dry-run.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.106.0",

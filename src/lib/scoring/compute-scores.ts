@@ -7,6 +7,10 @@ import {
   PM_FIT_POSITIVE_RULES,
   BASE_PM_FIT_SCORE,
 } from "@/config/scoring";
+import { hasConfirmedDomain } from "@/lib/ingestion/article-enricher";
+import { computeDiscoveryConfidence } from "@/lib/scoring/discovery-confidence";
+import { computeParisPresenceScore } from "@/lib/scoring/paris-presence";
+import type { SourceKind } from "@/lib/ingestion/types";
 
 export type ScoreBreakdown = Record<string, number>;
 
@@ -171,6 +175,16 @@ export async function computeAllScores(db: typeof import("@/db").db) {
   for (const company of allCompanies) {
     const aiHiring = computeAiHiringScore(company);
     const pmFit = computePmFitScore(company);
+    const discoverySources = company.discoverySources ?? [];
+    const sourceKind: SourceKind = discoverySources.includes("seed") ? "seed" : "rss";
+    const discoveryConfidence = computeDiscoveryConfidence(
+      { discoverySources },
+      {
+        sourceKind,
+        hasConfirmedDomain: hasConfirmedDomain(company.website, company.websiteDomain),
+      }
+    );
+    const parisPresence = computeParisPresenceScore(company);
 
     await db
       .update(companies)
@@ -179,6 +193,9 @@ export async function computeAllScores(db: typeof import("@/db").db) {
         pmFitScore: pmFit.score,
         aiHiringScoreBreakdown: aiHiring.breakdown,
         pmFitScoreBreakdown: pmFit.breakdown,
+        discoveryConfidence,
+        parisPresenceScore: parisPresence.score,
+        parisPresenceBreakdown: parisPresence.breakdown,
         updatedAt: new Date(),
       })
       .where(eq(companies.id, company.id));

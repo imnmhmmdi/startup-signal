@@ -17,8 +17,8 @@ async function main() {
 
   for (const company of SEED_COMPANIES) {
     const result = await upsertSeedCompany(company);
-    if (result === "created") created++;
-    if (result === "updated") updated++;
+    if (result.status === "created") created++;
+    if (result.status === "updated") updated++;
   }
 
   console.log(`Seed complete: ${created} created, ${updated} updated`);

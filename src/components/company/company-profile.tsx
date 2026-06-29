@@ -194,6 +194,53 @@ export function CompanyProfile({
 
           <Card>
             <CardHeader>
+              <CardTitle className="text-base">Discovery signals</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm">
+              <div className="flex flex-wrap gap-4">
+                <ScoreBadge
+                  score={company.parisPresenceScore ?? 0}
+                  label="Paris presence"
+                  size="md"
+                  showTier
+                  align="start"
+                />
+                <ScoreBadge
+                  score={company.discoveryConfidence ?? 0}
+                  label="Confidence"
+                  size="md"
+                  align="start"
+                />
+              </div>
+              {(company.discoverySources ?? []).length > 0 && (
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
+                    Discovery sources
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(company.discoverySources ?? []).map((source) => (
+                      <Badge key={source} variant="outline">
+                        {source}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {company.parisPresenceBreakdown &&
+                Object.keys(company.parisPresenceBreakdown).length > 0 && (
+                  <>
+                    <Separator />
+                    <ScoreBreakdown
+                      title="Paris presence"
+                      breakdown={company.parisPresenceBreakdown}
+                    />
+                  </>
+                )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
               <CardTitle className="text-base">Funding Summary</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-4 text-sm">

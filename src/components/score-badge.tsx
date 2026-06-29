@@ -1,4 +1,4 @@
-import { Target, TrendingUp, LucideIcon } from "lucide-react";
+import { MapPin, ShieldCheck, Target, TrendingUp, LucideIcon } from "lucide-react";
 import {
   getScoreBadgeClasses,
   resolveScoreBadgeKind,
@@ -16,6 +16,8 @@ type ScoreBadgeProps = {
 const LABEL_ICONS: Record<string, LucideIcon> = {
   "PM fit": Target,
   "Hiring signal": TrendingUp,
+  "Paris presence": MapPin,
+  Confidence: ShieldCheck,
 };
 
 export function getScoreTier(score: number): { label: string; shortLabel: string } {

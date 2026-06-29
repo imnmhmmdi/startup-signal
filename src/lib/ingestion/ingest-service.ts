@@ -1,10 +1,111 @@
-import { eq, or } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { companies, rawFundingItems, ingestionRuns } from "@/db/schema";
-import type { DataSourceAdapter, NormalizedCompany } from "./types";
+import type { DataSourceAdapter, NormalizedCompany, SourceKind } from "./types";
 import { getAllAdapters } from "./adapters";
-import { computeDataHash, extractDomain, slugify } from "./utils";
+import { hasConfirmedDomain } from "./article-enricher";
+import { buildDedupKeys, findExistingCompany } from "./dedup";
+import { computeDataHash, extractDomain, normalizeCompanyName, slugify } from "./utils";
 import { buildLogoUrlFromDomain, getCompanyDomain } from "@/lib/company-logo";
+import { computeDiscoveryConfidence } from "@/lib/scoring/discovery-confidence";
+import { computeParisPresenceScore } from "@/lib/scoring/paris-presence";
+
+function mergeDiscoverySources(existing: string[] | null | undefined, incoming: string[]): string[] {
+  return [...new Set([...(existing ?? []), ...incoming])];
+}
+
+function resolveSourceKind(
+  sourceName: string,
+  normalized: NormalizedCompany
+): SourceKind {
+  return normalized.sourceKind ?? (sourceName === "seed" ? "seed" : "rss");
+}
+
+function buildCompanySnapshot(
+  normalized: NormalizedCompany,
+  sourceName: string,
+  existing?: typeof companies.$inferSelect
+) {
+  const domain = extractDomain(normalized.website) ?? normalized.websiteDomain;
+  const slug = slugify(normalized.name);
+  const normalizedName = normalized.normalizedName ?? normalizeCompanyName(normalized.name);
+  const discoverySources = mergeDiscoverySources(
+    existing?.discoverySources,
+    normalized.discoverySources ?? [sourceName]
+  );
+  const mergedSources = { ...(existing?.sources ?? {}), ...normalized.sources };
+
+  const website = normalized.website ?? existing?.website;
+  const websiteDomain = domain ?? existing?.websiteDomain;
+  const linkedinUrl = normalized.linkedinUrl ?? existing?.linkedinUrl;
+  const effectiveDomain = websiteDomain ?? getCompanyDomain(existing ?? { website, websiteDomain });
+
+  const draft = {
+    name: existing?.name ?? normalized.name,
+    slug,
+    normalizedName,
+    website,
+    websiteDomain: effectiveDomain,
+    linkedinUrl,
+    logoUrl:
+      normalized.logoUrl ??
+      existing?.logoUrl ??
+      (effectiveDomain ? buildLogoUrlFromDomain(effectiveDomain) : undefined),
+    hqCity: normalized.hqCity ?? existing?.hqCity,
+    hqCountry: normalized.hqCountry ?? existing?.hqCountry,
+    fundingAmountUsd: normalized.fundingAmountUsd ?? existing?.fundingAmountUsd,
+    fundingRound: normalized.fundingRound ?? existing?.fundingRound,
+    fundingDate: normalized.fundingDate ?? existing?.fundingDate,
+    investors: normalized.investors ?? existing?.investors ?? [],
+    industry: normalized.industry ?? existing?.industry,
+    subcategory: normalized.subcategory ?? existing?.subcategory,
+    aiCategory: normalized.aiCategory ?? existing?.aiCategory,
+    businessModel: normalized.businessModel ?? existing?.businessModel,
+    isOpenSource: normalized.isOpenSource ?? existing?.isOpenSource ?? false,
+    githubStars: normalized.githubStars ?? existing?.githubStars,
+    hiringPageUrl: normalized.hiringPageUrl ?? existing?.hiringPageUrl,
+    openRolesTotal: normalized.openRolesTotal ?? existing?.openRolesTotal ?? 0,
+    pmRoles: normalized.pmRoles ?? existing?.pmRoles ?? 0,
+    aiRoles: normalized.aiRoles ?? existing?.aiRoles ?? 0,
+    engRoles: normalized.engRoles ?? existing?.engRoles ?? 0,
+    workMode: normalized.workMode ?? existing?.workMode,
+    visaSponsorship: normalized.visaSponsorship ?? existing?.visaSponsorship,
+    languagesRequired: normalized.languagesRequired ?? existing?.languagesRequired ?? [],
+    description: normalized.description ?? existing?.description,
+    sources: mergedSources,
+    discoverySources,
+    dataHash: computeDataHash({
+      name: normalized.name,
+      fundingAmountUsd: normalized.fundingAmountUsd ?? existing?.fundingAmountUsd,
+      fundingRound: normalized.fundingRound ?? existing?.fundingRound,
+      fundingDate: (normalized.fundingDate ?? existing?.fundingDate)?.toISOString(),
+      openRolesTotal: normalized.openRolesTotal ?? existing?.openRolesTotal,
+    }),
+  };
+
+  const sourceKind = resolveSourceKind(sourceName, normalized);
+  const discoveryConfidence = computeDiscoveryConfidence(
+    { discoverySources },
+    {
+      sourceKind,
+      hasConfirmedDomain: hasConfirmedDomain(draft.website, draft.websiteDomain),
+    }
+  );
+
+  const parisPresence = computeParisPresenceScore({
+    ...existing,
+    ...draft,
+    discoverySources,
+    sources: mergedSources,
+  } as typeof companies.$inferSelect);
+
+  return {
+    ...draft,
+    discoveryConfidence,
+    parisPresenceScore: parisPresence.score,
+    parisPresenceBreakdown: parisPresence.breakdown,
+  };
+}
 
 export async function ingestFromAdapter(adapter: DataSourceAdapter) {
   const run = await db
@@ -26,21 +127,30 @@ export async function ingestFromAdapter(adapter: DataSourceAdapter) {
     for (const rawItem of rawItems) {
       itemsProcessed++;
 
-      await db
+      const [insertedRaw] = await db
         .insert(rawFundingItems)
         .values({
           sourceName: adapter.sourceName,
           externalId: rawItem.externalId,
           rawData: rawItem.raw,
         })
-        .onConflictDoNothing();
+        .onConflictDoNothing()
+        .returning({ id: rawFundingItems.id });
 
       const normalized = await adapter.normalize(rawItem);
       if (!normalized) continue;
 
       const result = await upsertCompany(normalized, adapter.sourceName);
-      if (result === "created") itemsCreated++;
-      if (result === "updated") itemsUpdated++;
+
+      if (insertedRaw?.id && result.companyId) {
+        await db
+          .update(rawFundingItems)
+          .set({ companyId: result.companyId, processed: true })
+          .where(eq(rawFundingItems.id, insertedRaw.id));
+      }
+
+      if (result.status === "created") itemsCreated++;
+      if (result.status === "updated") itemsUpdated++;
     }
 
     await db
@@ -83,97 +193,82 @@ export async function ingestAllSources() {
 async function upsertCompany(
   normalized: NormalizedCompany,
   sourceName: string
-): Promise<"created" | "updated" | "skipped"> {
-  const domain = extractDomain(normalized.website);
+): Promise<{ status: "created" | "updated" | "skipped"; companyId?: string }> {
   const slug = slugify(normalized.name);
-  const resolvedLogoUrl =
-    normalized.logoUrl ??
-    (domain ? buildLogoUrlFromDomain(domain) : undefined);
+  const domain = extractDomain(normalized.website) ?? normalized.websiteDomain;
 
-  const existing = domain
-    ? await db
-        .select()
-        .from(companies)
-        .where(or(eq(companies.websiteDomain, domain), eq(companies.slug, slug)))
-        .limit(1)
-    : await db.select().from(companies).where(eq(companies.slug, slug)).limit(1);
+  const existing = await findExistingCompany(
+    buildDedupKeys({
+      name: normalized.name,
+      website: normalized.website,
+      websiteDomain: domain,
+      linkedinUrl: normalized.linkedinUrl,
+      slug,
+    })
+  );
 
-  const dataHash = computeDataHash({
-    name: normalized.name,
-    fundingAmountUsd: normalized.fundingAmountUsd,
-    fundingRound: normalized.fundingRound,
-    fundingDate: normalized.fundingDate?.toISOString(),
-    openRolesTotal: normalized.openRolesTotal,
-  });
+  const snapshot = buildCompanySnapshot(normalized, sourceName, existing ?? undefined);
 
-  if (existing.length > 0) {
-    const company = existing[0];
-    const mergedSources = { ...company.sources, ...normalized.sources };
+  if (existing) {
+    await db
+      .update(companies)
+      .set({
+        ...snapshot,
+        updatedAt: new Date(),
+      })
+      .where(eq(companies.id, existing.id));
 
-    const effectiveDomain = domain ?? getCompanyDomain(company);
-    const logoUrl =
-      company.logoUrl ??
-      resolvedLogoUrl ??
-      (effectiveDomain ? buildLogoUrlFromDomain(effectiveDomain) : undefined);
+    return { status: "updated", companyId: existing.id };
+  }
+
+  const [created] = await db
+    .insert(companies)
+    .values({
+      ...snapshot,
+    })
+    .returning({ id: companies.id });
+
+  return { status: "created", companyId: created.id };
+}
+
+export async function upsertSeedCompany(normalized: NormalizedCompany) {
+  return upsertCompany(
+    {
+      ...normalized,
+      discoverySources: normalized.discoverySources ?? ["seed"],
+      sourceKind: "seed",
+    },
+    "seed"
+  );
+}
+
+export async function backfillDiscoveryScores() {
+  const allCompanies = await db.select().from(companies);
+
+  for (const company of allCompanies) {
+    const discoverySources = company.discoverySources ?? [];
+    const sourceKind: SourceKind = discoverySources.includes("seed") ? "seed" : "rss";
+    const discoveryConfidence = computeDiscoveryConfidence(
+      { discoverySources },
+      {
+        sourceKind,
+        hasConfirmedDomain: hasConfirmedDomain(company.website, company.websiteDomain),
+      }
+    );
+    const parisPresence = computeParisPresenceScore(company);
 
     await db
       .update(companies)
       .set({
-        fundingAmountUsd: normalized.fundingAmountUsd ?? company.fundingAmountUsd,
-        fundingRound: normalized.fundingRound ?? company.fundingRound,
-        fundingDate: normalized.fundingDate ?? company.fundingDate,
-        hqCountry: normalized.hqCountry ?? company.hqCountry,
-        hqCity: normalized.hqCity ?? company.hqCity,
-        aiCategory: normalized.aiCategory ?? company.aiCategory,
-        businessModel: normalized.businessModel ?? company.businessModel,
-        description: normalized.description ?? company.description,
-        website: normalized.website ?? company.website,
-        websiteDomain: effectiveDomain ?? company.websiteDomain,
-        logoUrl,
-        sources: mergedSources,
-        dataHash,
+        normalizedName: company.normalizedName ?? normalizeCompanyName(company.name),
+        discoverySources: discoverySources.length > 0 ? discoverySources : ["seed"],
+        discoveryConfidence,
+        parisPresenceScore: parisPresence.score,
+        parisPresenceBreakdown: parisPresence.breakdown,
         updatedAt: new Date(),
       })
       .where(eq(companies.id, company.id));
-
-    return "updated";
   }
 
-  await db.insert(companies).values({
-    name: normalized.name,
-    slug,
-    website: normalized.website,
-    websiteDomain: domain,
-    linkedinUrl: normalized.linkedinUrl,
-    logoUrl: resolvedLogoUrl,
-    hqCity: normalized.hqCity,
-    hqCountry: normalized.hqCountry,
-    fundingAmountUsd: normalized.fundingAmountUsd,
-    fundingRound: normalized.fundingRound,
-    fundingDate: normalized.fundingDate,
-    investors: normalized.investors ?? [],
-    industry: normalized.industry,
-    subcategory: normalized.subcategory,
-    aiCategory: normalized.aiCategory,
-    businessModel: normalized.businessModel,
-    isOpenSource: normalized.isOpenSource ?? false,
-    githubStars: normalized.githubStars,
-    hiringPageUrl: normalized.hiringPageUrl,
-    openRolesTotal: normalized.openRolesTotal ?? 0,
-    pmRoles: normalized.pmRoles ?? 0,
-    aiRoles: normalized.aiRoles ?? 0,
-    engRoles: normalized.engRoles ?? 0,
-    workMode: normalized.workMode,
-    visaSponsorship: normalized.visaSponsorship,
-    languagesRequired: normalized.languagesRequired ?? [],
-    sources: normalized.sources,
-    description: normalized.description,
-    dataHash,
-  });
-
-  return "created";
-}
-
-export async function upsertSeedCompany(normalized: NormalizedCompany) {
-  return upsertCompany(normalized, "seed");
+  return allCompanies.length;
 }

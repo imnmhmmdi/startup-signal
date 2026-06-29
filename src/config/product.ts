@@ -2,9 +2,9 @@ export const PRODUCT = {
   name: "Startup Signal",
   tagline: "Hiring intelligence for senior Product Managers",
   description:
-    "Track French tech startups, funding events, and hiring signals to decide where to apply next.",
+    "Discover the best Senior PM opportunities in the Paris ecosystem — funding momentum, hiring signals, and ecosystem presence.",
   defaultCountry: "France",
-  focusRegion: "French tech",
+  focusRegion: "Paris ecosystem",
 } as const;
 
 export const NAV_ITEMS = [

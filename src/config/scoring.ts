@@ -56,6 +56,14 @@ export const SCORE_BREAKDOWN_LABELS: Record<string, string> = {
   pureConsulting: "Pure consulting",
   nativeFrenchRequired: "Native French required",
   onlyResearchRoles: "Research-only roles",
+  hqInFrance: "HQ in France",
+  hqInParis: "HQ in Paris",
+  parisOfficeMention: "Paris office mention",
+  franceOfficeMention: "France office mention",
+  internationalHqParisOps: "International HQ, Paris operations",
+  pmHiringActivity: "PM hiring activity",
+  frenchEcosystemSource: "French ecosystem source",
+  ecosystemParticipation: "Ecosystem participation",
 };
 
 export function getBreakdownLabel(key: string): string {

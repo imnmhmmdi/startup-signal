@@ -7,11 +7,16 @@ function daysAgo(n: number): Date {
 }
 
 function seed(
-  partial: Omit<NormalizedCompany, "sources"> & { sources?: NormalizedCompany["sources"] }
+  partial: Omit<NormalizedCompany, "sources" | "discoverySources" | "sourceKind"> & {
+    sources?: NormalizedCompany["sources"];
+    discoverySources?: string[];
+  }
 ): NormalizedCompany {
   const fetchedAt = new Date().toISOString();
   return {
     ...partial,
+    discoverySources: partial.discoverySources ?? ["seed"],
+    sourceKind: "seed",
     sources: partial.sources ?? {
       name: { value: partial.name, source: "seed", fetchedAt },
     },
@@ -47,7 +52,7 @@ export const SEED_COMPANIES: NormalizedCompany[] = [
   seed({ name: "Graphcore", website: "https://graphcore.ai", hqCity: "Bristol", hqCountry: "United Kingdom", fundingAmountUsd: 222_000_000, fundingRound: "Series E", fundingDate: daysAgo(160), aiCategory: "AI Infrastructure", businessModel: "B2B SaaS", industry: "Artificial Intelligence", openRolesTotal: 12, pmRoles: 1, aiRoles: 4, engRoles: 7, workMode: "Hybrid", description: "Intelligence Processing Units for AI." }),
   seed({ name: "BenevolentAI", website: "https://benevolent.com", hqCity: "London", hqCountry: "United Kingdom", fundingAmountUsd: 90_000_000, fundingRound: "Series D+", fundingDate: daysAgo(140), aiCategory: "Healthcare AI", businessModel: "B2B SaaS", industry: "Artificial Intelligence", openRolesTotal: 16, pmRoles: 2, aiRoles: 7, engRoles: 7, workMode: "Hybrid", description: "AI drug discovery and development." }),
 
-  seed({ name: "ElevenLabs", website: "https://elevenlabs.io", hqCity: "London", hqCountry: "United Kingdom", fundingAmountUsd: 180_000_000, fundingRound: "Series C", fundingDate: daysAgo(20), aiCategory: "AI Product", businessModel: "B2B SaaS", industry: "Artificial Intelligence", openRolesTotal: 30, pmRoles: 3, aiRoles: 10, engRoles: 17, workMode: "Remote", description: "AI voice synthesis and cloning platform." }),
+  seed({ name: "ElevenLabs", website: "https://elevenlabs.io", hqCity: "London", hqCountry: "United Kingdom", fundingAmountUsd: 180_000_000, fundingRound: "Series C", fundingDate: daysAgo(20), aiCategory: "AI Product", businessModel: "B2B SaaS", industry: "Artificial Intelligence", openRolesTotal: 30, pmRoles: 3, aiRoles: 10, engRoles: 17, workMode: "Remote", description: "AI voice synthesis platform with a Paris product office and active PM hiring in France." }),
   seed({ name: "Harvey", website: "https://harvey.ai", hqCity: "London", hqCountry: "United Kingdom", fundingAmountUsd: 100_000_000, fundingRound: "Series C", fundingDate: daysAgo(45), aiCategory: "Enterprise AI", businessModel: "Enterprise SaaS", industry: "Artificial Intelligence", openRolesTotal: 22, pmRoles: 2, aiRoles: 8, engRoles: 12, workMode: "Hybrid", description: "AI assistant for legal professionals." }),
 
   seed({ name: "Typeface", website: "https://typeface.ai", hqCity: "Amsterdam", hqCountry: "Netherlands", fundingAmountUsd: 100_000_000, fundingRound: "Series B", fundingDate: daysAgo(80), aiCategory: "Enterprise AI", businessModel: "Enterprise SaaS", industry: "Artificial Intelligence", openRolesTotal: 20, pmRoles: 2, aiRoles: 7, engRoles: 11, workMode: "Hybrid", description: "Generative AI for enterprise marketing." }),

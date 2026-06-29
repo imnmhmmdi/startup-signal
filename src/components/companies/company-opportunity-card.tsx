@@ -4,7 +4,7 @@ import { ArrowRight, Briefcase, MapPin, TrendingUp } from "lucide-react";
 import { CompanyLogo } from "@/components/company-logo";
 import { PmFitRing } from "@/components/overview/pm-fit-ring";
 import { CategoryBadge, FundingStageBadge } from "@/components/semantic-badges";
-import { formatFundingAmount, getScoreTier } from "@/components/score-badge";
+import { ScoreBadge, formatFundingAmount, getScoreTier } from "@/components/score-badge";
 import { getHiringPrediction } from "@/config/product";
 import { getTopPmFitReason } from "@/config/scoring";
 import {
@@ -110,6 +110,14 @@ export function CompanyOpportunityCard({
                 <Briefcase className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
                 {pmRoles}
               </span>
+            </MetricRow>
+
+            <MetricRow label="Paris presence">
+              <ScoreBadge score={company.parisPresenceScore ?? 0} label="Paris presence" size="sm" />
+            </MetricRow>
+
+            <MetricRow label="Confidence">
+              <ScoreBadge score={company.discoveryConfidence ?? 0} label="Confidence" size="sm" />
             </MetricRow>
 
             <MetricRow label="Hiring signal">
