@@ -1,0 +1,24 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/ingest-funding-news",
+      "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/enrich-company-data",
+      "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/refresh-hiring-data",
+      "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/compute-scores",
+      "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/generate-company-briefs",
+      "schedule": "0 10 * * *"
+    }
+  ]
+}
