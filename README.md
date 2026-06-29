@@ -69,6 +69,6 @@ Push to `main` on GitHub → Vercel auto-deploys.
 - `CRON_SECRET`
 - `ANTHROPIC_API_KEY` (optional, for company briefs)
 
-Migrations run automatically during `npm run build` and again at server startup via `instrumentation.ts`. If the `companies` table is empty, seed data is loaded automatically (`SEED_ON_DEPLOY=true` by default).
+Migrations run automatically at server startup via `instrumentation.ts`. If the `companies` table is empty, seed data is loaded automatically (`SEED_ON_DEPLOY=true` by default).
 
 Verify deployment: `GET /api/health` returns `"database": { "ready": true, "companyCount": 59 }`.
