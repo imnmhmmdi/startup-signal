@@ -14,6 +14,7 @@ import {
 } from "@/lib/db/validate-config";
 
 const MIGRATION_LOCK_ID = 8347291;
+const POOLER_HOST_PATTERN = /\.pooler\.supabase\.com$/;
 const REQUIRED_TABLES = [
   "companies",
   "company_briefs",
@@ -55,7 +56,11 @@ async function runBootstrap(options?: { seedIfEmpty?: boolean }): Promise<void> 
   const db = drizzle(client, { schema });
 
   try {
-    await client`SELECT pg_advisory_lock(${MIGRATION_LOCK_ID})`;
+    const useAdvisoryLock = !POOLER_HOST_PATTERN.test(config.hostname ?? "");
+
+    if (useAdvisoryLock) {
+      await client`SELECT pg_advisory_lock(${MIGRATION_LOCK_ID})`;
+    }
 
     await migrate(db, {
       migrationsFolder: path.join(process.cwd(), "drizzle"),
@@ -87,7 +92,10 @@ async function runBootstrap(options?: { seedIfEmpty?: boolean }): Promise<void> 
   } catch (error) {
     throw new Error(formatDatabaseConnectionError(error), { cause: error });
   } finally {
-    await client`SELECT pg_advisory_unlock(${MIGRATION_LOCK_ID})`.catch(() => undefined);
+    const useAdvisoryLock = !POOLER_HOST_PATTERN.test(config.hostname ?? "");
+    if (useAdvisoryLock) {
+      await client`SELECT pg_advisory_unlock(${MIGRATION_LOCK_ID})`.catch(() => undefined);
+    }
     await client.end();
   }
 }

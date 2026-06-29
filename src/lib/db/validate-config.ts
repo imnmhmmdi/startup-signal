@@ -1,3 +1,5 @@
+import { lookup } from "node:dns/promises";
+
 export type DatabaseConfigStatus = {
   valid: boolean;
   error?: string;
@@ -25,8 +27,11 @@ export function validateDatabaseConfig(): DatabaseConfigStatus {
   }
 
   let hostname: string;
+  let username: string | undefined;
   try {
-    hostname = new URL(connectionString.replace(/^postgresql:/, "http:")).hostname;
+    const parsed = new URL(connectionString.replace(/^postgresql:/, "http:"));
+    hostname = parsed.hostname;
+    username = parsed.username;
   } catch {
     return {
       valid: false,
@@ -35,7 +40,12 @@ export function validateDatabaseConfig(): DatabaseConfigStatus {
     };
   }
 
-  if (supabaseRef && !hostname.includes(supabaseRef)) {
+  const refMatches =
+    !supabaseRef ||
+    hostname.includes(supabaseRef) ||
+    username === `postgres.${supabaseRef}`;
+
+  if (supabaseRef && !refMatches) {
     return {
       valid: false,
       hostname,
@@ -46,7 +56,100 @@ export function validateDatabaseConfig(): DatabaseConfigStatus {
     };
   }
 
+  // db.[ref].supabase.co is often IPv6-only; Vercel serverless requires IPv4.
+  if (/^db\.[^.]+\.supabase\.co$/.test(hostname)) {
+    return {
+      valid: false,
+      hostname,
+      supabaseRef,
+      error:
+        `DATABASE_URL uses "${hostname}" which is IPv6-only (Dedicated/Direct pooler). ` +
+        "Vercel cannot resolve this — use the Shared Pooler connection string instead: " +
+        "Supabase Dashboard → Connect → Connection pooling → Transaction pooler (port 6543). " +
+        "It looks like: postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres",
+    };
+  }
+
   return { valid: true, hostname, supabaseRef };
+}
+
+export function getEnvironmentStatus(): {
+  DATABASE_URL: boolean;
+  NEXT_PUBLIC_SUPABASE_URL: boolean;
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: boolean;
+  supabaseRef?: string;
+  databaseHostname?: string;
+  databaseUsername?: string;
+  configValid: boolean;
+  configError?: string;
+} {
+  const config = validateDatabaseConfig();
+  let databaseUsername: string | undefined;
+  if (process.env.DATABASE_URL) {
+    try {
+      databaseUsername = new URL(
+        process.env.DATABASE_URL.replace(/^postgresql:/, "http:")
+      ).username;
+    } catch {
+      databaseUsername = undefined;
+    }
+  }
+
+  return {
+    DATABASE_URL: Boolean(process.env.DATABASE_URL),
+    NEXT_PUBLIC_SUPABASE_URL: Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL),
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
+    supabaseRef: config.supabaseRef,
+    databaseHostname: config.hostname,
+    databaseUsername,
+    configValid: config.valid,
+    configError: config.error,
+  };
+}
+
+export async function verifyDatabaseDns(): Promise<{
+  hostname?: string;
+  ok: boolean;
+  ipv4: boolean;
+  ipv6: boolean;
+  error?: string;
+}> {
+  const config = validateDatabaseConfig();
+  if (!config.valid || !config.hostname) {
+    return {
+      hostname: config.hostname,
+      ok: false,
+      ipv4: false,
+      ipv6: false,
+      error: config.error ?? "Invalid DATABASE_URL",
+    };
+  }
+
+  try {
+    const records = await lookup(config.hostname, { all: true });
+    const ipv4 = records.some((r) => r.family === 4);
+    const ipv6 = records.some((r) => r.family === 6);
+
+    if (!ipv4) {
+      return {
+        hostname: config.hostname,
+        ok: false,
+        ipv4,
+        ipv6,
+        error: `No IPv4 DNS record for ${config.hostname}. Use Shared Pooler for Vercel.`,
+      };
+    }
+
+    return { hostname: config.hostname, ok: true, ipv4, ipv6 };
+  } catch (error) {
+    return {
+      hostname: config.hostname,
+      ok: false,
+      ipv4: false,
+      ipv6: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
 }
 
 export function formatDatabaseConnectionError(error: unknown): string {
