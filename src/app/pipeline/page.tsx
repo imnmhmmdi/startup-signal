@@ -27,19 +27,7 @@ import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/layout/page-header";
 import { PipelineLoadingSkeleton } from "@/components/pipeline/pipeline-loading";
 import { EmptyState } from "@/components/empty-state";
-
-const PIPELINE_STAGES: {
-  value: SavedStatus;
-  label: string;
-  description: string;
-}[] = [
-  { value: "new", label: "New", description: "Saved, not yet contacted" },
-  { value: "contacted", label: "Contacted", description: "Outreach sent" },
-  { value: "applied", label: "Applied", description: "Application submitted" },
-  { value: "interview", label: "Interview", description: "In interview process" },
-  { value: "offer", label: "Offer", description: "Offer received" },
-  { value: "rejected", label: "Rejected", description: "Closed — not proceeding" },
-];
+import { PIPELINE_STAGES, getNextAction } from "@/config/pipeline-stages";
 
 type PipelineCompany = Company & {
   saved: { id: string; notes: string | null; status: SavedStatus } | null;
@@ -93,6 +81,7 @@ export default function PipelinePage() {
   const byStage = PIPELINE_STAGES.map((stage) => ({
     ...stage,
     count: companies.filter((c) => (c.saved?.status ?? "new") === stage.value).length,
+    companies: companies.filter((c) => (c.saved?.status ?? "new") === stage.value),
   }));
 
   const filteredCompanies = stageFilter
@@ -196,79 +185,133 @@ export default function PipelinePage() {
         ))}
       </div>
 
-      {filteredCompanies.length === 0 ? (
-        <div className="rounded-lg border bg-card p-8 text-center text-muted-foreground text-sm">
-          No companies in this stage.
-        </div>
-      ) : (
-      <div className="rounded-lg border bg-card overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted/50">
-              <TableHead>Company</TableHead>
-              <TableHead>Funding</TableHead>
-              <TableHead className="text-center">PM fit</TableHead>
-              <TableHead className="text-center">Hiring signal</TableHead>
-              <TableHead>Stage</TableHead>
-              <TableHead>Funded</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredCompanies.map((company) => (
-              <TableRow key={company.id}>
-                <TableCell>
-                  <Link
-                    href={`/companies/${company.id}`}
-                    className="font-medium hover:text-primary flex items-center gap-1.5"
-                  >
-                    {company.name}
-                    <ExternalLink className="h-3 w-3 text-muted-foreground" />
-                  </Link>
-                  {company.aiCategory && (
-                    <Badge variant="secondary" className="text-xs mt-1">
-                      {company.aiCategory}
-                    </Badge>
+      <div className="overflow-x-auto pb-2">
+        <div className="flex gap-3 min-w-max">
+          {byStage.map((stage) => {
+            const columnCompanies = stageFilter
+              ? stage.value === stageFilter
+                ? stage.companies
+                : []
+              : stage.companies;
+
+            if (stageFilter && stage.value !== stageFilter) return null;
+
+            return (
+              <div
+                key={stage.value}
+                className={cn(
+                  "w-64 shrink-0 rounded-lg border bg-muted/20 p-3",
+                  stageFilter === stage.value && "ring-2 ring-primary/30"
+                )}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold">{stage.label}</h3>
+                  <span className="text-xs text-muted-foreground tabular-nums">{stage.count}</span>
+                </div>
+                <div className="space-y-2 max-h-[420px] overflow-y-auto">
+                  {columnCompanies.length === 0 ? (
+                    <p className="text-xs text-muted-foreground py-4 text-center">No companies</p>
+                  ) : (
+                    columnCompanies.map((company) => (
+                      <Link key={company.id} href={`/companies/${company.id}`}>
+                        <Card className="hover:border-primary/30 hover:shadow-sm transition-all">
+                          <CardContent className="p-3 space-y-2">
+                            <p className="font-medium text-sm leading-tight">{company.name}</p>
+                            <ScoreBadge score={company.pmFitScore ?? 0} label="PM fit" />
+                            <p className="text-[11px] text-muted-foreground">{stage.nextAction}</p>
+                          </CardContent>
+                        </Card>
+                      </Link>
+                    ))
                   )}
-                </TableCell>
-                <TableCell className="text-sm">
-                  <Badge variant="outline" className="text-xs mr-1">
-                    {company.fundingRound ?? "—"}
-                  </Badge>
-                  <span className="tabular-nums">
-                    {formatFundingAmount(company.fundingAmountUsd)}
-                  </span>
-                </TableCell>
-                <TableCell className="text-center">
-                  <ScoreBadge score={company.pmFitScore ?? 0} label="PM fit" showTier />
-                </TableCell>
-                <TableCell className="text-center">
-                  <ScoreBadge score={company.aiHiringScore ?? 0} label="Hiring signal" />
-                </TableCell>
-                <TableCell>
-                  <Select
-                    value={company.saved?.status ?? "new"}
-                    onValueChange={(v) => updateStatus(company.id, v as SavedStatus)}
-                  >
-                    <SelectTrigger className="h-8 w-36">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PIPELINE_STAGES.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  {formatDate(company.fundingDate)}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
+
+      {filteredCompanies.length === 0 ? (
+        <EmptyState
+          title="No companies in this stage"
+          description="Select a different stage or clear the filter."
+        />
+      ) : (
+        <div className="rounded-lg border bg-card overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50">
+                <TableHead>Company</TableHead>
+                <TableHead>Funding</TableHead>
+                <TableHead className="text-center">PM fit</TableHead>
+                <TableHead className="text-center">Hiring signal</TableHead>
+                <TableHead>Stage</TableHead>
+                <TableHead>Next action</TableHead>
+                <TableHead>Funded</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredCompanies.map((company) => {
+                const status = company.saved?.status ?? "new";
+                return (
+                  <TableRow key={company.id}>
+                    <TableCell>
+                      <Link
+                        href={`/companies/${company.id}`}
+                        className="font-medium hover:text-primary flex items-center gap-1.5"
+                      >
+                        {company.name}
+                        <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                      </Link>
+                      {company.aiCategory && (
+                        <Badge variant="secondary" className="text-xs mt-1">
+                          {company.aiCategory}
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      <Badge variant="outline" className="text-xs mr-1">
+                        {company.fundingRound ?? "—"}
+                      </Badge>
+                      <span className="tabular-nums">
+                        {formatFundingAmount(company.fundingAmountUsd)}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <ScoreBadge score={company.pmFitScore ?? 0} label="PM fit" showTier />
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <ScoreBadge score={company.aiHiringScore ?? 0} label="Hiring signal" />
+                    </TableCell>
+                    <TableCell>
+                      <Select
+                        value={status}
+                        onValueChange={(v) => updateStatus(company.id, v as SavedStatus)}
+                      >
+                        <SelectTrigger className="h-8 w-36">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {PIPELINE_STAGES.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {getNextAction(status)}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {formatDate(company.fundingDate)}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
       )}
     </div>
   );
