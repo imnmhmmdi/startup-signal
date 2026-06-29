@@ -11,11 +11,18 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CompanyLogo } from "@/components/company-logo";
 import { ScoreBadge, formatFundingAmount, formatDate } from "@/components/score-badge";
+import { CategoryBadge, FundingStageBadge } from "@/components/semantic-badges";
 import { getHiringPrediction } from "@/config/product";
+import {
+  getFundingAmountClasses,
+  getHiringPredictionTextClass,
+  getInteractiveTableRowClasses,
+  getPmFitCellBackgroundClass,
+  getSurfacePanelClasses,
+} from "@/lib/semantic-colors";
 import { EmptyState } from "@/components/empty-state";
 import type { Company, SavedStatus } from "@/db/schema";
 import { cn } from "@/lib/utils";
@@ -62,7 +69,7 @@ export function CompanyTable({ companies, isAuthenticated }: CompanyTableProps) 
   }
 
   return (
-    <div className="rounded-lg border bg-card overflow-hidden">
+    <div className={cn(getSurfacePanelClasses(), "overflow-hidden")}>
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
@@ -84,7 +91,7 @@ export function CompanyTable({ companies, isAuthenticated }: CompanyTableProps) 
             {companies.map((company) => {
               const prediction = getHiringPrediction(company.aiHiringScore ?? 0);
               return (
-              <TableRow key={company.id} className="group">
+              <TableRow key={company.id} className={cn("group", getInteractiveTableRowClasses())}>
                 <TableCell>
                   <Button
                     variant="ghost"
@@ -133,28 +140,30 @@ export function CompanyTable({ companies, isAuthenticated }: CompanyTableProps) 
                   <span className="text-sm">{company.hqCountry ?? "—"}</span>
                 </TableCell>
                 <TableCell>
-                  <Badge variant="outline" className="text-xs font-normal">
-                    {company.fundingRound ?? "—"}
-                  </Badge>
+                  {company.fundingRound ? (
+                    <FundingStageBadge round={company.fundingRound} />
+                  ) : (
+                    <span className="text-sm text-muted-foreground">—</span>
+                  )}
                 </TableCell>
-                <TableCell className="text-right tabular-nums text-sm">
+                <TableCell className={cn("text-right text-sm", getFundingAmountClasses())}>
                   {formatFundingAmount(company.fundingAmountUsd)}
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
                   {formatDate(company.fundingDate)}
                 </TableCell>
                 <TableCell>
-                  <Badge variant="secondary" className="text-xs font-normal">
-                    {company.aiCategory ?? "—"}
-                  </Badge>
+                  {company.aiCategory ? (
+                    <CategoryBadge category={company.aiCategory} />
+                  ) : (
+                    <span className="text-sm text-muted-foreground">—</span>
+                  )}
                 </TableCell>
                 <TableCell>
                   <span
                     className={cn(
                       "text-sm font-medium",
-                      prediction.label === "High" && "text-emerald-700",
-                      prediction.label === "Moderate" && "text-amber-700",
-                      prediction.label === "Low" && "text-muted-foreground"
+                      getHiringPredictionTextClass(prediction.label)
                     )}
                   >
                     {prediction.label}
@@ -166,7 +175,7 @@ export function CompanyTable({ companies, isAuthenticated }: CompanyTableProps) 
                 <TableCell
                   className={cn(
                     "text-center",
-                    (company.pmFitScore ?? 0) >= 70 && "bg-emerald-500/5"
+                    getPmFitCellBackgroundClass(company.pmFitScore ?? 0)
                   )}
                 >
                   <ScoreBadge score={company.pmFitScore ?? 0} label="PM fit" showTier />

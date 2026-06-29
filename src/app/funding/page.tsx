@@ -43,7 +43,7 @@ export default async function FundingPage({ searchParams }: PageProps) {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <Suspense fallback={<Skeleton className="h-36 w-full" />}>
+          <Suspense fallback={<Skeleton className="h-36 w-full rounded-xl" />}>
             <FundingFilters fundingRounds={filterOptions.fundingRounds} />
           </Suspense>
 
@@ -55,8 +55,13 @@ export default async function FundingPage({ searchParams }: PageProps) {
           ) : (
             groupedEvents.map(([month, monthEvents]) => (
               <section key={month}>
-                <h2 className="text-sm font-semibold text-muted-foreground mb-3">{month}</h2>
-                <div className="space-y-3">
+                <div className="mb-4 flex items-baseline gap-3">
+                  <h2 className="text-group-label">{month}</h2>
+                  <span className="text-xs tabular-nums text-muted-foreground">
+                    {monthEvents.length} {monthEvents.length === 1 ? "event" : "events"}
+                  </span>
+                </div>
+                <div className="space-y-4">
                   {monthEvents.map((company) => (
                     <FundingEventCard key={company.id} company={company} />
                   ))}

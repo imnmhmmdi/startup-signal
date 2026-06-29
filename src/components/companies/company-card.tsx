@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { CompanyLogo } from "@/components/company-logo";
-import { ScoreBadge, formatFundingAmount } from "@/components/score-badge";
-import { getHiringPrediction } from "@/config/product";
-import { getTopPmFitReason } from "@/config/scoring";
+import { Card, CardContent } from "@/components/ui/card";
+import { CompanyOpportunityCard } from "@/components/companies/company-opportunity-card";
+import {
+  getClickableCardHoverClasses,
+  getStatCardAccentClasses,
+  type StatCardAccent,
+} from "@/lib/semantic-colors";
 import type { Company } from "@/db/schema";
 import { cn } from "@/lib/utils";
 
@@ -15,85 +16,12 @@ type CompanyCardProps = {
 };
 
 export function CompanyCard({ company, showPrediction = true }: CompanyCardProps) {
-  const prediction = getHiringPrediction(company.aiHiringScore ?? 0);
-  const pmScore = company.pmFitScore ?? 0;
-  const fitReason = getTopPmFitReason(company.pmFitScoreBreakdown);
-
   return (
-    <Link href={`/companies/${company.id}`} className="block cursor-pointer">
-      <Card className="hover:border-primary/30 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 h-full flex flex-col">
-        <div
-          className={cn(
-            "flex items-center justify-between gap-3 px-4 py-3 border-b",
-            pmScore >= 75 && "bg-emerald-500/8 border-emerald-200/60",
-            pmScore >= 50 && pmScore < 75 && "bg-amber-500/8 border-amber-200/60",
-            pmScore < 50 && "bg-muted/40 border-border"
-          )}
-        >
-          <ScoreBadge
-            score={pmScore}
-            label="PM fit"
-            size="lg"
-            showTier
-            align="start"
-          />
-        </div>
-        <CardHeader className="pb-2">
-          <div className="flex items-start gap-3">
-            <CompanyLogo
-              name={company.name}
-              logoUrl={company.logoUrl}
-              website={company.website}
-              websiteDomain={company.websiteDomain}
-              size="md"
-            />
-            <div className="min-w-0">
-              <CardTitle className="text-base">{company.name}</CardTitle>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {company.hqCity ? `${company.hqCity}, ` : ""}
-                {company.hqCountry ?? "France"}
-              </p>
-              {fitReason && (
-                <p className="text-xs text-emerald-700 mt-1.5 line-clamp-2">
-                  Strong match: {fitReason}
-                </p>
-              )}
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3 flex-1 flex flex-col">
-          <div className="flex flex-wrap gap-1.5">
-            {company.fundingRound && (
-              <Badge variant="outline" className="text-xs">{company.fundingRound}</Badge>
-            )}
-            {company.aiCategory && (
-              <Badge variant="secondary" className="text-xs">{company.aiCategory}</Badge>
-            )}
-          </div>
-          <div className="grid grid-cols-2 gap-2 text-sm">
-            <div>
-              <p className="text-xs text-muted-foreground">Raised</p>
-              <p className="font-medium tabular-nums">
-                {formatFundingAmount(company.fundingAmountUsd)}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">PM roles</p>
-              <p className="font-medium tabular-nums">{company.pmRoles ?? 0}</p>
-            </div>
-          </div>
-          {showPrediction && (
-            <div className="flex items-center justify-between pt-1 border-t mt-auto">
-              <div>
-                <p className="text-xs text-muted-foreground">Hiring prediction</p>
-                <p className="text-sm font-medium">{prediction.label}</p>
-              </div>
-              <ScoreBadge score={company.aiHiringScore ?? 0} label="Hiring signal" />
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </Link>
+    <CompanyOpportunityCard
+      company={company}
+      showPrediction={showPrediction}
+      pmFitSize="sm"
+    />
   );
 }
 
@@ -102,11 +30,17 @@ type StatCardProps = {
   value: string | number;
   detail?: string;
   href?: string;
+  accent?: StatCardAccent;
 };
 
-export function StatCard({ label, value, detail, href }: StatCardProps) {
+export function StatCard({ label, value, detail, href, accent = "neutral" }: StatCardProps) {
   const content = (
-    <Card className={href ? "hover:border-primary/30 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer" : ""}>
+    <Card
+      className={cn(
+        getStatCardAccentClasses(accent),
+        href && cn("cursor-pointer", getClickableCardHoverClasses())
+      )}
+    >
       <CardContent className="pt-5">
         <p className="text-sm text-muted-foreground">{label}</p>
         <p className="text-3xl font-bold tabular-nums mt-1">{value}</p>
@@ -120,6 +54,6 @@ export function StatCard({ label, value, detail, href }: StatCardProps) {
     </Card>
   );
 
-  if (href) return <Link href={href}>{content}</Link>;
+  if (href) return <Link href={href} className="block h-full">{content}</Link>;
   return content;
 }

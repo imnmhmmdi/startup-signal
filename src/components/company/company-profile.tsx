@@ -26,6 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ScoreBadge, formatFundingAmount, formatDate } from "@/components/score-badge";
+import { CategoryBadge, FundingStageBadge } from "@/components/semantic-badges";
 import { CompanyLogo } from "@/components/company-logo";
 import { ProfileSummaryCard } from "@/components/profile-summary-card";
 import { getHiringPrediction } from "@/config/product";
@@ -129,12 +130,12 @@ export function CompanyProfile({
               size="lg"
             />
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">{company.name}</h1>
+              <h1 className="text-page-title">{company.name}</h1>
               <div className="flex flex-wrap items-center gap-2 mt-2">
                 {company.hqCountry && <Badge variant="outline">{company.hqCountry}</Badge>}
-                {company.aiCategory && <Badge variant="secondary">{company.aiCategory}</Badge>}
+                {company.aiCategory && <CategoryBadge category={company.aiCategory} />}
                 {company.businessModel && <Badge variant="outline">{company.businessModel}</Badge>}
-                {company.fundingRound && <Badge>{company.fundingRound}</Badge>}
+                {company.fundingRound && <FundingStageBadge round={company.fundingRound} />}
               </div>
             </div>
           </div>

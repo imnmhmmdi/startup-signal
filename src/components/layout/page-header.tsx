@@ -12,7 +12,9 @@ export function PageHeader({ title, subtitle, actions, size = "default" }: PageH
     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <div>
         <h1 className={cn(size === "lg" ? "text-page-title-lg" : "text-page-title")}>{title}</h1>
-        {subtitle && <p className="text-muted-foreground mt-1">{subtitle}</p>}
+        {subtitle && (
+          <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-muted-foreground">{subtitle}</p>
+        )}
       </div>
       {actions ? <div className="shrink-0">{actions}</div> : null}
     </div>

@@ -10,7 +10,7 @@ export function PipelineLoadingSkeleton() {
           <Skeleton key={i} className="h-20 rounded-xl" />
         ))}
       </div>
-      <Skeleton className="h-64 rounded-lg" />
+      <Skeleton className="h-64 rounded-xl" />
     </div>
   );
 }

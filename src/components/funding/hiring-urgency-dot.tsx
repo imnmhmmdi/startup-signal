@@ -1,4 +1,5 @@
 import { getHiringPrediction } from "@/config/product";
+import { getHiringUrgencyDotClass } from "@/lib/semantic-colors";
 import { cn } from "@/lib/utils";
 
 type HiringUrgencyDotProps = {
@@ -13,9 +14,7 @@ export function HiringUrgencyDot({ score, className }: HiringUrgencyDotProps) {
     <span
       className={cn(
         "inline-block h-2 w-2 rounded-full shrink-0",
-        prediction.label === "High" && "bg-emerald-500",
-        prediction.label === "Moderate" && "bg-amber-500",
-        prediction.label === "Low" && "bg-muted-foreground/40",
+        getHiringUrgencyDotClass(score),
         className
       )}
       title={`Hiring prediction: ${prediction.label}`}

@@ -1,8 +1,11 @@
-import { isNull, or, eq } from "drizzle-orm";
+import { isNull, or, eq, like } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import * as schema from "@/db/schema";
 import { companies } from "@/db/schema";
-import { buildLogoUrlFromDomain, getCompanyDomain } from "@/lib/company-logo";
+import {
+  buildLogoUrlFromDomain,
+  getCompanyDomain,
+} from "@/lib/company-logo";
 
 type DB = PostgresJsDatabase<typeof schema>;
 
@@ -10,7 +13,13 @@ export async function backfillCompanyLogos(db: DB): Promise<number> {
   const rows = await db
     .select()
     .from(companies)
-    .where(or(isNull(companies.logoUrl), eq(companies.logoUrl, "")));
+    .where(
+      or(
+        isNull(companies.logoUrl),
+        eq(companies.logoUrl, ""),
+        like(companies.logoUrl, "%logo.clearbit.com%")
+      )
+    );
 
   let updated = 0;
 

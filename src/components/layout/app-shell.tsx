@@ -13,6 +13,7 @@ import {
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 import { PRODUCT, NAV_ITEMS } from "@/config/product";
+import { getNavItemActiveClasses, getNavItemInactiveClasses } from "@/lib/semantic-colors";
 
 const ICONS = {
   "/": LayoutDashboard,
@@ -38,7 +39,7 @@ export function AppShell({ children, userEmail }: AppShellProps) {
     <div className="flex min-h-screen">
       <aside className="hidden md:flex w-60 flex-col border-r bg-card fixed inset-y-0 left-0 z-40">
         <div className="p-5 border-b">
-          <Link href="/" className="flex items-center gap-2.5">
+          <Link href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-90">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
               <Radio className="h-4 w-4 text-primary-foreground" />
             </div>
@@ -51,7 +52,7 @@ export function AppShell({ children, userEmail }: AppShellProps) {
           </Link>
         </div>
 
-        <nav className="flex-1 p-3 space-y-0.5">
+        <nav className="flex-1 p-3 space-y-1">
           {NAV_ITEMS.map(({ href, label, description }) => {
             const Icon = ICONS[href as keyof typeof ICONS];
             const active =
@@ -62,15 +63,15 @@ export function AppShell({ children, userEmail }: AppShellProps) {
                 key={href}
                 href={href}
                 className={cn(
-                  "flex items-start gap-3 rounded-lg px-3 py-2.5 transition-colors",
-                  active
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  "flex items-start gap-3 rounded-lg px-3 py-2.5 transition-all duration-200",
+                  active ? getNavItemActiveClasses() : getNavItemInactiveClasses()
                 )}
               >
                 <Icon className="h-4 w-4 mt-0.5 shrink-0" />
                 <div>
-                  <p className="text-sm font-medium leading-none">{label}</p>
+                  <p className={cn("text-sm leading-none", active ? "font-semibold" : "font-medium")}>
+                    {label}
+                  </p>
                   <p className="text-[11px] mt-1 opacity-70">{description}</p>
                 </div>
               </Link>
@@ -118,7 +119,7 @@ export function AppShell({ children, userEmail }: AppShellProps) {
                   "px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors",
                   active
                     ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
                 )}
               >
                 {label}

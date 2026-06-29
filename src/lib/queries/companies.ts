@@ -137,29 +137,19 @@ export async function getCompanyById(id: string, userId?: string) {
 export async function getFilterOptions() {
   return withQueryTimeout(
     (async () => {
-  const [countries, rounds, categories] = await Promise.all([
-    db
-      .selectDistinct({ value: companies.hqCountry })
-      .from(companies)
-      .where(sql`${companies.hqCountry} IS NOT NULL`)
-      .orderBy(asc(companies.hqCountry)),
-    db
-      .selectDistinct({ value: companies.fundingRound })
-      .from(companies)
-      .where(sql`${companies.fundingRound} IS NOT NULL`)
-      .orderBy(asc(companies.fundingRound)),
-    db
-      .selectDistinct({ value: companies.aiCategory })
-      .from(companies)
-      .where(sql`${companies.aiCategory} IS NOT NULL`)
-      .orderBy(asc(companies.aiCategory)),
-  ]);
+      const [row] = await db
+        .select({
+          countries: sql<string[]>`coalesce(array_agg(distinct ${companies.hqCountry} order by ${companies.hqCountry}) filter (where ${companies.hqCountry} is not null), '{}')`,
+          fundingRounds: sql<string[]>`coalesce(array_agg(distinct ${companies.fundingRound} order by ${companies.fundingRound}) filter (where ${companies.fundingRound} is not null), '{}')`,
+          aiCategories: sql<string[]>`coalesce(array_agg(distinct ${companies.aiCategory} order by ${companies.aiCategory}) filter (where ${companies.aiCategory} is not null), '{}')`,
+        })
+        .from(companies);
 
-  return {
-    countries: countries.map((c) => c.value).filter(Boolean) as string[],
-    fundingRounds: rounds.map((r) => r.value).filter(Boolean) as string[],
-    aiCategories: categories.map((c) => c.value).filter(Boolean) as string[],
-  };
+      return {
+        countries: row?.countries ?? [],
+        fundingRounds: row?.fundingRounds ?? [],
+        aiCategories: row?.aiCategories ?? [],
+      };
     })(),
     "Filter options"
   );

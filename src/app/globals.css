@@ -81,6 +81,13 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  /* Semantic signal colors (reference — applied via semantic-colors.ts) */
+  --signal-pm-fit: oklch(0.62 0.17 155);
+  --signal-hiring: oklch(0.68 0.16 55);
+  --signal-funding: oklch(0.55 0.14 250);
+  --signal-infra: oklch(0.58 0.18 295);
+  --signal-healthcare: oklch(0.58 0.18 15);
+  --signal-llm: oklch(0.52 0.16 275);
 }
 
 .dark {
@@ -144,5 +151,8 @@
   }
   .text-section-title {
     @apply text-lg font-semibold tracking-tight;
+  }
+  .text-group-label {
+    @apply text-sm font-semibold tracking-tight text-foreground;
   }
 }

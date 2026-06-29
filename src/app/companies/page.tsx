@@ -45,12 +45,12 @@ export default async function CompaniesPage({ searchParams }: PageProps) {
         subtitle={`${companies.length} ${PRODUCT.focusRegion} startups — ranked by PM fit and hiring signal`}
       />
 
-      <Suspense fallback={<Skeleton className="h-48 w-full" />}>
+          <Suspense fallback={<Skeleton className="h-48 w-full rounded-xl" />}>
         <DashboardFilters filterOptions={filterOptions} defaultCountry={PRODUCT.defaultCountry} />
       </Suspense>
 
       <div className="flex justify-end">
-        <Suspense fallback={<Skeleton className="h-9 w-40" />}>
+        <Suspense fallback={<Skeleton className="h-9 w-40 rounded-xl" />}>
           <CompaniesViewToggle />
         </Suspense>
       </div>

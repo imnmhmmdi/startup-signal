@@ -11,7 +11,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
@@ -22,8 +21,15 @@ import {
 } from "@/components/ui/select";
 import { CompanyLogo } from "@/components/company-logo";
 import { ScoreBadge, formatFundingAmount, formatDate } from "@/components/score-badge";
+import { CategoryBadge, FundingStageBadge } from "@/components/semantic-badges";
 import { buttonVariants } from "@/components/ui/button";
 import type { Company, SavedStatus } from "@/db/schema";
+import {
+  getClickableCardHoverClasses,
+  getFundingAmountClasses,
+  getInteractiveTableRowClasses,
+  getSurfacePanelClasses,
+} from "@/lib/semantic-colors";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/layout/page-header";
 import { PipelineLoadingSkeleton } from "@/components/pipeline/pipeline-loading";
@@ -171,7 +177,8 @@ export default function PipelinePage() {
           >
             <Card
               className={cn(
-                "transition-all duration-200 hover:border-primary/30 hover:shadow-sm cursor-pointer",
+                "cursor-pointer",
+                getClickableCardHoverClasses(),
                 stageFilter === stage.value && "ring-2 ring-primary border-primary/30"
               )}
             >
@@ -201,7 +208,8 @@ export default function PipelinePage() {
               <div
                 key={stage.value}
                 className={cn(
-                  "w-64 shrink-0 rounded-lg border bg-muted/20 p-3",
+                  getSurfacePanelClasses(),
+                  "w-64 shrink-0 bg-muted/20 p-3",
                   stageFilter === stage.value && "ring-2 ring-primary/30"
                 )}
               >
@@ -214,8 +222,8 @@ export default function PipelinePage() {
                     <p className="text-xs text-muted-foreground py-4 text-center">No companies</p>
                   ) : (
                     columnCompanies.map((company) => (
-                      <Link key={company.id} href={`/companies/${company.id}`}>
-                        <Card className="hover:border-primary/30 hover:shadow-sm transition-all">
+                      <Link key={company.id} href={`/companies/${company.id}`} className="block">
+                        <Card className={getClickableCardHoverClasses()}>
                           <CardContent className="p-3 space-y-2">
                             <div className="flex items-center gap-2">
                               <CompanyLogo
@@ -247,7 +255,7 @@ export default function PipelinePage() {
           description="Select a different stage or clear the filter."
         />
       ) : (
-        <div className="rounded-lg border bg-card overflow-hidden">
+        <div className={cn(getSurfacePanelClasses(), "overflow-hidden")}>
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/50">
@@ -264,11 +272,11 @@ export default function PipelinePage() {
               {filteredCompanies.map((company) => {
                 const status = company.saved?.status ?? "new";
                 return (
-                  <TableRow key={company.id}>
+                  <TableRow key={company.id} className={getInteractiveTableRowClasses()}>
                     <TableCell>
                       <Link
                         href={`/companies/${company.id}`}
-                        className="font-medium hover:text-primary flex items-center gap-2"
+                        className="font-medium hover:text-primary flex items-center gap-2 transition-colors"
                       >
                         <CompanyLogo
                           name={company.name}
@@ -283,18 +291,22 @@ export default function PipelinePage() {
                         </span>
                       </Link>
                       {company.aiCategory && (
-                        <Badge variant="secondary" className="text-xs mt-1">
-                          {company.aiCategory}
-                        </Badge>
+                        <div className="mt-1.5">
+                          <CategoryBadge category={company.aiCategory} />
+                        </div>
                       )}
                     </TableCell>
                     <TableCell className="text-sm">
-                      <Badge variant="outline" className="text-xs mr-1">
-                        {company.fundingRound ?? "—"}
-                      </Badge>
-                      <span className="tabular-nums">
-                        {formatFundingAmount(company.fundingAmountUsd)}
-                      </span>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {company.fundingRound ? (
+                          <FundingStageBadge round={company.fundingRound} />
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                        <span className={getFundingAmountClasses()}>
+                          {formatFundingAmount(company.fundingAmountUsd)}
+                        </span>
+                      </div>
                     </TableCell>
                     <TableCell className="text-center">
                       <ScoreBadge score={company.pmFitScore ?? 0} label="PM fit" showTier />

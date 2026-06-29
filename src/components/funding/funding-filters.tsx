@@ -14,6 +14,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
+import { getSurfacePanelClasses } from "@/lib/semantic-colors";
+import { cn } from "@/lib/utils";
 
 type FundingFiltersProps = {
   fundingRounds: string[];
@@ -48,7 +50,7 @@ export function FundingFilters({ fundingRounds }: FundingFiltersProps) {
   const minPmFit = parseInt(searchParams.get("minPmFitScore") ?? "0");
 
   return (
-    <div className="space-y-4 rounded-lg border bg-card p-4">
+    <div className={cn(getSurfacePanelClasses(), "space-y-4 p-4")}>
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold">Filter events</h2>
         {hasFilters && (

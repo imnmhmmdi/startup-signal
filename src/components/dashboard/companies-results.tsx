@@ -6,6 +6,8 @@ import { CompanyTable } from "@/components/dashboard/company-table";
 import { CompanyCard } from "@/components/companies/company-card";
 import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
+import { getSurfacePanelClasses } from "@/lib/semantic-colors";
+import { cn } from "@/lib/utils";
 import type { Company, SavedStatus } from "@/db/schema";
 
 type CompanyWithSaved = Company & {
@@ -30,7 +32,7 @@ export function CompaniesViewToggle() {
   };
 
   return (
-    <div className="flex items-center gap-1 rounded-lg border p-1 bg-muted/30">
+    <div className={cn(getSurfacePanelClasses(), "flex items-center gap-1 bg-muted/30 p-1")}>
       <Button
         type="button"
         variant={view === "cards" ? "secondary" : "ghost"}

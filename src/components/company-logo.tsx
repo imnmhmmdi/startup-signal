@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
-import { getCompanyInitials, getCompanyLogoSources } from "@/lib/company-logo";
+import { getCompanyInitials, getCompanyLogoCandidates } from "@/lib/company-logo";
 
 type CompanyLogoProps = {
   name: string;
@@ -28,44 +28,80 @@ export function CompanyLogo({
   size = "sm",
   className,
 }: CompanyLogoProps) {
-  const sources = getCompanyLogoSources({ logoUrl, website, websiteDomain });
-  const [src, setSrc] = useState(sources.primary);
-  const [showInitials, setShowInitials] = useState(!sources.primary);
+  const candidates = useMemo(
+    () => getCompanyLogoCandidates({ logoUrl, website, websiteDomain }),
+    [logoUrl, website, websiteDomain]
+  );
+  const candidatesKey = candidates.join("|");
 
-  const handleError = () => {
-    if (src === sources.primary && sources.fallback && sources.fallback !== sources.primary) {
-      setSrc(sources.fallback);
-      return;
-    }
-    setShowInitials(true);
-  };
+  const [candidateIndex, setCandidateIndex] = useState(0);
+  const [loaded, setLoaded] = useState(false);
 
-  if (showInitials || !src) {
+  useEffect(() => {
+    setCandidateIndex(0);
+    setLoaded(false);
+  }, [candidatesKey]);
+
+  const src = candidates[candidateIndex] ?? null;
+  const initials = getCompanyInitials(name);
+  const sizeClass = SIZE_CLASSES[size];
+  const showInitialsOnly = !src;
+
+  const handleLoad = useCallback(() => {
+    setLoaded(true);
+  }, []);
+
+  const handleError = useCallback(() => {
+    setLoaded(false);
+    setCandidateIndex((current) => current + 1);
+  }, []);
+
+  if (showInitialsOnly || candidateIndex >= candidates.length) {
     return (
       <div
         className={cn(
           "rounded-md bg-muted flex items-center justify-center font-semibold text-muted-foreground shrink-0",
-          SIZE_CLASSES[size],
+          sizeClass,
           className
         )}
         aria-label={`${name} logo`}
       >
-        {getCompanyInitials(name)}
+        {initials}
       </div>
     );
   }
 
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={src}
-      alt=""
-      onError={handleError}
-      className={cn(
-        "rounded-md object-contain bg-white border shrink-0 p-0.5",
-        SIZE_CLASSES[size],
-        className
-      )}
-    />
+    <div
+      className={cn("relative shrink-0", sizeClass, className)}
+      aria-label={`${name} logo`}
+    >
+      <div
+        className={cn(
+          "absolute inset-0 flex items-center justify-center rounded-md bg-muted font-semibold text-muted-foreground transition-opacity duration-150",
+          sizeClass,
+          loaded ? "opacity-0" : "opacity-100"
+        )}
+        aria-hidden
+      >
+        {initials}
+      </div>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        key={src}
+        src={src}
+        alt=""
+        width={48}
+        height={48}
+        loading="lazy"
+        decoding="async"
+        onLoad={handleLoad}
+        onError={handleError}
+        className={cn(
+          "relative h-full w-full rounded-md border bg-white object-contain p-0.5 transition-opacity duration-150",
+          loaded ? "opacity-100" : "opacity-0"
+        )}
+      />
+    </div>
   );
 }

@@ -1,4 +1,8 @@
 import { Target, TrendingUp, LucideIcon } from "lucide-react";
+import {
+  getScoreBadgeClasses,
+  resolveScoreBadgeKind,
+} from "@/lib/semantic-colors";
 import { cn } from "@/lib/utils";
 
 type ScoreBadgeProps = {
@@ -21,12 +25,6 @@ export function getScoreTier(score: number): { label: string; shortLabel: string
   return { label: "Low fit", shortLabel: "Low" };
 }
 
-function getScoreColor(score: number): string {
-  if (score >= 75) return "bg-emerald-500/15 text-emerald-700 border-emerald-200";
-  if (score >= 50) return "bg-amber-500/15 text-amber-700 border-amber-200";
-  return "bg-red-500/15 text-red-700 border-red-200";
-}
-
 export function ScoreBadge({
   score,
   label,
@@ -36,6 +34,7 @@ export function ScoreBadge({
 }: ScoreBadgeProps) {
   const tier = getScoreTier(score);
   const Icon = label ? LABEL_ICONS[label] : undefined;
+  const kind = resolveScoreBadgeKind(label);
 
   return (
     <div className={cn("flex flex-col gap-0.5", align === "center" ? "items-center" : "items-start")}>
@@ -48,7 +47,7 @@ export function ScoreBadge({
       <span
         className={cn(
           "inline-flex items-center justify-center rounded-md border font-semibold tabular-nums",
-          getScoreColor(score),
+          getScoreBadgeClasses(score, kind),
           size === "sm" && "px-2 py-0.5 text-xs min-w-[2.5rem]",
           size === "md" && "px-3 py-1 text-sm min-w-[3rem]",
           size === "lg" && "px-4 py-1.5 text-lg min-w-[3.5rem]"
