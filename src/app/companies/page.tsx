@@ -7,6 +7,7 @@ import { DashboardFilters } from "@/components/dashboard/filters";
 import { CompanyTable } from "@/components/dashboard/company-table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PRODUCT } from "@/config/product";
+import { PageHeader } from "@/components/layout/page-header";
 
 type PageProps = {
   searchParams: Promise<Record<string, string | undefined>>;
@@ -37,12 +38,10 @@ export default async function CompaniesPage({ searchParams }: PageProps) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Companies</h1>
-        <p className="text-muted-foreground mt-1">
-          {companies.length} {PRODUCT.focusRegion} startups — ranked by PM fit and hiring signal
-        </p>
-      </div>
+      <PageHeader
+        title="Companies"
+        subtitle={`${companies.length} ${PRODUCT.focusRegion} startups — ranked by PM fit and hiring signal`}
+      />
 
       <Suspense fallback={<Skeleton className="h-48 w-full" />}>
         <DashboardFilters filterOptions={filterOptions} defaultCountry={PRODUCT.defaultCountry} />

@@ -24,6 +24,7 @@ import { ScoreBadge, formatFundingAmount, formatDate } from "@/components/score-
 import { buttonVariants } from "@/components/ui/button";
 import type { Company, SavedStatus } from "@/db/schema";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/layout/page-header";
 
 const PIPELINE_STAGES: {
   value: SavedStatus;
@@ -98,12 +99,10 @@ export default function PipelinePage() {
   if (unauthorized) {
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Pipeline</h1>
-          <p className="text-muted-foreground mt-1">
-            Track companies from discovery through application
-          </p>
-        </div>
+        <PageHeader
+          title="Pipeline"
+          subtitle="Track companies from discovery through application"
+        />
         <div className="rounded-lg border bg-card p-12 text-center space-y-3">
           <Kanban className="h-8 w-8 mx-auto text-muted-foreground" />
           <p className="text-muted-foreground">Sign in to manage your application pipeline.</p>
@@ -118,9 +117,7 @@ export default function PipelinePage() {
   if (error) {
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Pipeline</h1>
-        </div>
+        <PageHeader title="Pipeline" />
         <div className="rounded-lg border bg-card p-12 text-center space-y-3">
           <p className="text-muted-foreground">Unable to load pipeline. Please try again.</p>
         </div>
@@ -131,12 +128,10 @@ export default function PipelinePage() {
   if (companies.length === 0) {
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Pipeline</h1>
-          <p className="text-muted-foreground mt-1">
-            Track companies from discovery through application
-          </p>
-        </div>
+        <PageHeader
+          title="Pipeline"
+          subtitle="Track companies from discovery through application"
+        />
         <div className="rounded-lg border bg-card p-12 text-center space-y-3">
           <Kanban className="h-8 w-8 mx-auto text-muted-foreground" />
           <p className="text-muted-foreground">No companies in your pipeline yet.</p>
@@ -150,12 +145,10 @@ export default function PipelinePage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Pipeline</h1>
-        <p className="text-muted-foreground mt-1">
-          {companies.length} companies in your application workflow
-        </p>
-      </div>
+      <PageHeader
+        title="Pipeline"
+        subtitle={`${companies.length} companies in your application workflow`}
+      />
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {byStage.map((stage) => (

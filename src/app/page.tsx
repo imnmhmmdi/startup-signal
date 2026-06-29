@@ -11,6 +11,7 @@ import {
 } from "@/lib/queries/dashboard";
 import { StatCard, CompanyCard, FundingEventRow } from "@/components/companies/company-card";
 import { ProfileChip } from "@/components/profile-chip";
+import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 import { PRODUCT } from "@/config/product";
@@ -45,15 +46,11 @@ export default async function OverviewPage() {
 
   return (
     <div className="space-y-8">
-      <div className="space-y-3">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Overview</h1>
-            <p className="text-muted-foreground mt-1">{briefingLine}</p>
-          </div>
-          <ProfileChip />
-        </div>
-      </div>
+      <PageHeader
+        title="Overview"
+        subtitle={briefingLine}
+        actions={<ProfileChip />}
+      />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard

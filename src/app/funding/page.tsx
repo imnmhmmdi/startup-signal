@@ -6,18 +6,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScoreBadge, formatFundingAmount, formatDate } from "@/components/score-badge";
 import { getHiringPrediction, PRODUCT } from "@/config/product";
+import { PageHeader } from "@/components/layout/page-header";
 
 export default async function FundingPage() {
   const events = await getRecentFundingEvents(50);
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Funding events</h1>
-        <p className="text-muted-foreground mt-1">
-          Recent rounds across {PRODUCT.focusRegion} — each event is a potential PM hiring trigger
-        </p>
-      </div>
+      <PageHeader
+        title="Funding events"
+        subtitle={`Recent rounds across ${PRODUCT.focusRegion} — each event is a potential PM hiring trigger`}
+      />
 
       {events.length === 0 ? (
         <Card>
