@@ -49,6 +49,7 @@ export default function PipelinePage() {
   const [loading, setLoading] = useState(true);
   const [unauthorized, setUnauthorized] = useState(false);
   const [error, setError] = useState(false);
+  const [stageFilter, setStageFilter] = useState<SavedStatus | null>(null);
 
   useEffect(() => {
     fetch("/api/saved")
@@ -92,6 +93,14 @@ export default function PipelinePage() {
     ...stage,
     count: companies.filter((c) => (c.saved?.status ?? "new") === stage.value).length,
   }));
+
+  const filteredCompanies = stageFilter
+    ? companies.filter((c) => (c.saved?.status ?? "new") === stageFilter)
+    : companies;
+
+  const activeStageLabel = stageFilter
+    ? PIPELINE_STAGES.find((s) => s.value === stageFilter)?.label
+    : null;
 
   if (loading) {
     return <PipelineLoadingSkeleton />;
@@ -148,22 +157,45 @@ export default function PipelinePage() {
     <div className="space-y-6">
       <PageHeader
         title="Pipeline"
-        subtitle={`${companies.length} companies in your application workflow`}
+        subtitle={
+          activeStageLabel
+            ? `${filteredCompanies.length} companies in ${activeStageLabel} — ${companies.length} total`
+            : `${companies.length} companies in your application workflow`
+        }
       />
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {byStage.map((stage) => (
-          <Card key={stage.value}>
-            <CardHeader className="pb-1 pt-4">
-              <CardTitle className="text-sm font-medium">{stage.label}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold tabular-nums">{stage.count}</p>
-            </CardContent>
-          </Card>
+          <button
+            key={stage.value}
+            type="button"
+            onClick={() =>
+              setStageFilter(stageFilter === stage.value ? null : stage.value)
+            }
+            className="text-left"
+          >
+            <Card
+              className={cn(
+                "transition-all duration-200 hover:border-primary/30 hover:shadow-sm cursor-pointer",
+                stageFilter === stage.value && "ring-2 ring-primary border-primary/30"
+              )}
+            >
+              <CardHeader className="pb-1 pt-4">
+                <CardTitle className="text-sm font-medium">{stage.label}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold tabular-nums">{stage.count}</p>
+              </CardContent>
+            </Card>
+          </button>
         ))}
       </div>
 
+      {filteredCompanies.length === 0 ? (
+        <div className="rounded-lg border bg-card p-8 text-center text-muted-foreground text-sm">
+          No companies in this stage.
+        </div>
+      ) : (
       <div className="rounded-lg border bg-card overflow-hidden">
         <Table>
           <TableHeader>
@@ -177,7 +209,7 @@ export default function PipelinePage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {companies.map((company) => (
+            {filteredCompanies.map((company) => (
               <TableRow key={company.id}>
                 <TableCell>
                   <Link
