@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { getUser } from "@/lib/supabase/server";
 import {
   getOverviewStats,
@@ -51,6 +52,26 @@ export default async function OverviewPage() {
         subtitle={briefingLine}
         actions={<ProfileChip />}
       />
+
+      {topPmFit.length > 0 && (
+        <div className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <p className="font-semibold">
+              {topPmFit.length} top {topPmFit.length === 1 ? "match" : "matches"} ready to review
+            </p>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              {stats.highPmFitCompanies} companies score 70+ PM fit for your profile — start with the strongest opportunities
+            </p>
+          </div>
+          <Link
+            href="/companies?sortBy=pmFitScore&minPmFitScore=70"
+            className={cn(buttonVariants({ size: "sm" }))}
+          >
+            Review top matches
+            <ArrowRight className="h-4 w-4 ml-1.5" />
+          </Link>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
