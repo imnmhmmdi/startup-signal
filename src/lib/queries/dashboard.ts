@@ -1,11 +1,21 @@
 import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
 import { db } from "@/db";
+import { normalizeCompanies } from "@/lib/company/normalize-company";
 import { withQueryTimeout } from "@/lib/db/with-query-timeout";
 import { companies, savedCompanies } from "@/db/schema";
 import { PRODUCT } from "@/config/product";
 
 const SIX_MONTHS_AGO = new Date();
 SIX_MONTHS_AGO.setMonth(SIX_MONTHS_AGO.getMonth() - 6);
+
+export const DEFAULT_OVERVIEW_STATS = {
+  frenchStartups: 0,
+  recentFundingEvents: 0,
+  highPmFitCompanies: 0,
+  openPmRoles: 0,
+  pipelineCount: 0,
+  recentHighPmFit: 0,
+} as const;
 
 function daysAgo(days: number): Date {
   const date = new Date();
@@ -83,7 +93,7 @@ export async function getOverviewStats(userId?: string) {
 }
 
 export async function getTopPmFitCompanies(limit = 5) {
-  return withQueryTimeout(
+  const rows = await withQueryTimeout(
     db
       .select()
       .from(companies)
@@ -92,6 +102,7 @@ export async function getTopPmFitCompanies(limit = 5) {
       .limit(limit),
     "Top PM fit companies"
   );
+  return normalizeCompanies(rows);
 }
 
 export async function getRecentFundingEvents(limit = 10) {
@@ -127,7 +138,7 @@ export async function queryFundingEvents(
     conditions.push(eq(companies.fundingRound, filters.fundingRound));
   }
 
-  return withQueryTimeout(
+  const rows = await withQueryTimeout(
     db
       .select()
       .from(companies)
@@ -136,6 +147,7 @@ export async function queryFundingEvents(
       .limit(limit),
     "Funding events"
   );
+  return normalizeCompanies(rows);
 }
 
 export function computeFundingStats(events: { fundingDate: Date | null; pmFitScore: number | null; fundingAmountUsd: number | null }[]) {
@@ -156,7 +168,7 @@ export function computeFundingStats(events: { fundingDate: Date | null; pmFitSco
 }
 
 export async function getStrongHiringSignals(limit = 5) {
-  return withQueryTimeout(
+  const rows = await withQueryTimeout(
     db
       .select()
       .from(companies)
@@ -170,4 +182,5 @@ export async function getStrongHiringSignals(limit = 5) {
       .limit(limit),
     "Hiring signals"
   );
+  return normalizeCompanies(rows);
 }

@@ -1,6 +1,9 @@
 export const dynamic = "force-dynamic";
 
 import { Suspense } from "react";
+import { QueryErrorBanner } from "@/components/query-error-banner";
+import { DEFAULT_FILTER_OPTIONS } from "@/lib/queries/defaults";
+import { safeQuery } from "@/lib/queries/safe-query";
 import { queryCompanies, getFilterOptions } from "@/lib/queries/companies";
 import { getUser } from "@/lib/supabase/server";
 import { DashboardFilters } from "@/components/dashboard/filters";
@@ -33,13 +36,22 @@ export default async function CompaniesPage({ searchParams }: PageProps) {
     sortOrder: (params.sortOrder as "asc" | "desc") ?? "desc",
   };
 
-  const [companies, filterOptions] = await Promise.all([
-    queryCompanies(filters),
-    getFilterOptions(),
+  const route = "/companies";
+
+  const [companiesResult, filterOptionsResult] = await Promise.all([
+    safeQuery(route, "queryCompanies", () => queryCompanies(filters), []),
+    safeQuery(route, "getFilterOptions", () => getFilterOptions(), DEFAULT_FILTER_OPTIONS),
   ]);
+
+  const companies = companiesResult.data;
+  const filterOptions = filterOptionsResult.data;
+  const loadErrors = [companiesResult, filterOptionsResult]
+    .filter((result) => !result.ok)
+    .map((result) => result.error!);
 
   return (
     <div className="space-y-6">
+      <QueryErrorBanner errors={loadErrors} />
       <PageHeader
         title="Companies"
         subtitle={`${companies.length} Paris ecosystem opportunities — ranked by PM fit and hiring signal`}

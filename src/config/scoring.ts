@@ -73,10 +73,10 @@ export function getBreakdownLabel(key: string): string {
 export function getTopPmFitReason(
   breakdown: Record<string, number> | null | undefined
 ): string | null {
-  if (!breakdown) return null;
+  if (!breakdown || typeof breakdown !== "object" || Array.isArray(breakdown)) return null;
 
   const top = Object.entries(breakdown)
-    .filter(([, value]) => value > 0)
+    .filter(([, value]) => typeof value === "number" && Number.isFinite(value) && value > 0)
     .sort((a, b) => b[1] - a[1])[0];
 
   if (!top) return null;

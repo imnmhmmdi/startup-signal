@@ -1,15 +1,17 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { companies, companyBriefs, type Company, type CompanyBriefContent } from "@/db/schema";
+import { normalizeCompanyBrief } from "@/lib/company/normalize-company";
+import { withQueryTimeout } from "@/lib/db/with-query-timeout";
 import { IMAN_PROFILE } from "@/config/pm-profile";
 import { computeDataHash } from "@/lib/ingestion/utils";
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
-
 export async function generateCompanyBrief(company: Company): Promise<CompanyBriefContent> {
+  const Anthropic = (await import("@anthropic-ai/sdk")).default;
+  const anthropic = new Anthropic({
+    apiKey: process.env.ANTHROPIC_API_KEY,
+  });
+
   const prompt = buildBriefPrompt(company);
 
   const response = await anthropic.messages.create({
@@ -92,14 +94,17 @@ export async function getCompanyBriefMeta(companyId: string): Promise<{
   updatedAt: Date | null;
   isAiGenerated: boolean;
 }> {
-  const [existingBrief] = await db
-    .select()
-    .from(companyBriefs)
-    .where(eq(companyBriefs.companyId, companyId))
-    .limit(1);
+  const [existingBrief] = await withQueryTimeout(
+    db
+      .select()
+      .from(companyBriefs)
+      .where(eq(companyBriefs.companyId, companyId))
+      .limit(1),
+    "Company brief meta"
+  );
 
   return {
-    brief: existingBrief?.brief ?? null,
+    brief: existingBrief?.brief ? normalizeCompanyBrief(existingBrief.brief) : null,
     updatedAt: existingBrief?.updatedAt ?? null,
     isAiGenerated: !!existingBrief,
   };

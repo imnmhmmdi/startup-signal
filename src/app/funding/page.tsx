@@ -4,6 +4,9 @@ import { Suspense } from "react";
 import { FundingEventCard } from "@/components/funding/funding-event-card";
 import { FundingSidebar } from "@/components/funding/funding-sidebar";
 import { FundingFilters } from "@/components/funding/funding-filters";
+import { QueryErrorBanner } from "@/components/query-error-banner";
+import { DEFAULT_FILTER_OPTIONS } from "@/lib/queries/defaults";
+import { safeQuery } from "@/lib/queries/safe-query";
 import { computeFundingStats, queryFundingEvents } from "@/lib/queries/dashboard";
 import { getFilterOptions } from "@/lib/queries/companies";
 import { groupFundingEventsByMonth } from "@/lib/funding-utils";
@@ -26,16 +29,25 @@ export default async function FundingPage({ searchParams }: PageProps) {
     fundingRound: params.fundingRound,
   };
 
-  const [events, filterOptions] = await Promise.all([
-    queryFundingEvents(filters, 100),
-    getFilterOptions(),
+  const route = "/funding";
+
+  const [eventsResult, filterOptionsResult] = await Promise.all([
+    safeQuery(route, "queryFundingEvents", () => queryFundingEvents(filters, 100), []),
+    safeQuery(route, "getFilterOptions", () => getFilterOptions(), DEFAULT_FILTER_OPTIONS),
   ]);
+
+  const events = eventsResult.data;
+  const filterOptions = filterOptionsResult.data;
+  const loadErrors = [eventsResult, filterOptionsResult]
+    .filter((result) => !result.ok)
+    .map((result) => result.error!);
 
   const stats = computeFundingStats(events);
   const groupedEvents = groupFundingEventsByMonth(events);
 
   return (
     <div className="space-y-6">
+      <QueryErrorBanner errors={loadErrors} />
       <PageHeader
         title="Funding events"
         subtitle={`Recent rounds across ${PRODUCT.focusRegion} — each event is a potential PM hiring trigger`}

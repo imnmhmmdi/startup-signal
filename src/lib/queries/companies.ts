@@ -1,5 +1,6 @@
 import { and, asc, desc, eq, gte, lte, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
+import { normalizeCompany } from "@/lib/company/normalize-company";
 import { withQueryTimeout } from "@/lib/db/with-query-timeout";
 import { companies, savedCompanies } from "@/db/schema";
 
@@ -93,7 +94,7 @@ export async function queryCompanies(filters: CompanyFilters = {}) {
     .offset(filters.offset ?? 0);
 
   return results.map((r) => ({
-    ...r.company,
+    ...normalizeCompany(r.company),
     saved: r.saved
       ? { id: r.saved.id, notes: r.saved.notes, status: r.saved.status }
       : null,
@@ -124,7 +125,7 @@ export async function getCompanyById(id: string, userId?: string) {
   if (!result) return null;
 
   return {
-    ...result.company,
+    ...normalizeCompany(result.company),
     saved: result.saved
       ? { id: result.saved.id, notes: result.saved.notes, status: result.saved.status }
       : null,

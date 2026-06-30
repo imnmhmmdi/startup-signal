@@ -2,12 +2,12 @@
 
 import { RouteErrorPanel } from "@/components/route-error-panel";
 
-export default function Error({
+export default function CompaniesError({
   error,
   reset,
 }: {
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  return <RouteErrorPanel error={error} reset={reset} />;
+  return <RouteErrorPanel error={error} reset={reset} routeLabel="Companies" />;
 }

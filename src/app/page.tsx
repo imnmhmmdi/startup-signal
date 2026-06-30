@@ -3,11 +3,14 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { getUser } from "@/lib/supabase/server";
+import { QueryErrorBanner } from "@/components/query-error-banner";
+import { safeQuery } from "@/lib/queries/safe-query";
 import {
   getOverviewStats,
   getTopPmFitCompanies,
   getRecentFundingEvents,
   getStrongHiringSignals,
+  DEFAULT_OVERVIEW_STATS,
 } from "@/lib/queries/dashboard";
 import { StatCard, CompanyCard } from "@/components/companies/company-card";
 import { FundingEventRow } from "@/components/funding/funding-event-row";
@@ -37,18 +40,34 @@ function buildBriefingLine(stats: {
 
 export default async function OverviewPage() {
   const user = await getUser();
+  const route = "/";
 
-  const [stats, topPmFit, recentFunding, hiringSignals] = await Promise.all([
-    getOverviewStats(user?.id),
-    getTopPmFitCompanies(4),
-    getRecentFundingEvents(6),
-    getStrongHiringSignals(4),
-  ]);
+  const [statsResult, topPmFitResult, recentFundingResult, hiringSignalsResult] =
+    await Promise.all([
+      safeQuery(route, "getOverviewStats", () => getOverviewStats(user?.id), DEFAULT_OVERVIEW_STATS),
+      safeQuery(route, "getTopPmFitCompanies", () => getTopPmFitCompanies(4), []),
+      safeQuery(route, "getRecentFundingEvents", () => getRecentFundingEvents(6), []),
+      safeQuery(route, "getStrongHiringSignals", () => getStrongHiringSignals(4), []),
+    ]);
+
+  const stats = statsResult.data;
+  const topPmFit = topPmFitResult.data;
+  const recentFunding = recentFundingResult.data;
+  const hiringSignals = hiringSignalsResult.data;
+  const loadErrors = [
+    statsResult,
+    topPmFitResult,
+    recentFundingResult,
+    hiringSignalsResult,
+  ]
+    .filter((result) => !result.ok)
+    .map((result) => result.error!);
 
   const briefingLine = buildBriefingLine(stats);
 
   return (
     <div className="space-y-12">
+      <QueryErrorBanner errors={loadErrors} />
       <OverviewHero briefingLine={briefingLine} />
 
       {topPmFit.length > 0 && (

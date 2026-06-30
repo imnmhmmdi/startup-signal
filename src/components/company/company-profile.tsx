@@ -219,8 +219,8 @@ export function CompanyProfile({
                   </p>
                   <div className="flex flex-wrap gap-1.5">
                     {(company.discoverySources ?? []).map((source) => (
-                      <Badge key={source} variant="outline">
-                        {source}
+                      <Badge key={String(source)} variant="outline">
+                        {String(source)}
                       </Badge>
                     ))}
                   </div>
@@ -421,7 +421,13 @@ function ScoreBreakdown({
   title: string;
   breakdown: Record<string, number> | null;
 }) {
-  if (!breakdown || Object.keys(breakdown).length === 0) {
+  const safeEntries = breakdown
+    ? Object.entries(breakdown).filter(
+        ([, value]) => typeof value === "number" && Number.isFinite(value)
+      )
+    : [];
+
+  if (safeEntries.length === 0) {
     return (
       <div>
         <p className="font-medium mb-2">{title}</p>
@@ -430,13 +436,13 @@ function ScoreBreakdown({
     );
   }
 
-  const maxAbs = Math.max(...Object.values(breakdown).map(Math.abs), 1);
+  const maxAbs = Math.max(...safeEntries.map(([, value]) => Math.abs(value)), 1);
 
   return (
     <div>
       <p className="font-medium mb-3">{title}</p>
       <div className="space-y-3">
-        {Object.entries(breakdown).map(([key, value]) => (
+        {safeEntries.map(([key, value]) => (
           <div key={key}>
             <div className="flex justify-between gap-4 text-xs mb-1">
               <span className="text-muted-foreground">{getBreakdownLabel(key)}</span>
