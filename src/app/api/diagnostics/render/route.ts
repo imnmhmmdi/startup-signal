@@ -195,7 +195,7 @@ export async function GET() {
         queryName: "computeFundingStats",
         ok: false,
         durationMs: 0,
-        error: getErrorMessage(error),
+        error: formatQueryErrorForUser(error, "computeFundingStats"),
       });
     }
   }
