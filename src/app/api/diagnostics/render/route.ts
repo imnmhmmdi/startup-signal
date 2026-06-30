@@ -12,8 +12,10 @@ import {
 } from "@/lib/queries/dashboard";
 import { getCompanyById } from "@/lib/queries/companies";
 import { getCompanyBriefMeta } from "@/lib/llm/company-brief";
+import { formatQueryErrorForUser } from "@/lib/db/query-errors";
+import { getDatabaseStatus } from "@/lib/db/bootstrap";
 import { normalizeCompany, normalizeCompanyBrief } from "@/lib/company/normalize-company";
-import { getErrorMessage, logServerError } from "@/lib/server-log";
+import { logServerError } from "@/lib/server-log";
 import { PRODUCT } from "@/config/product";
 
 export const dynamic = "force-dynamic";
@@ -103,13 +105,14 @@ async function runQueryCheck(
       queryName,
       ok: false,
       durationMs: Date.now() - started,
-      error: getErrorMessage(error),
+      error: formatQueryErrorForUser(error, queryName),
     };
   }
 }
 
 export async function GET() {
   const user = await getUser();
+  const database = await getDatabaseStatus();
   const routes: RouteCheck[] = [];
 
   const overviewQueries = await Promise.all([
@@ -261,9 +264,10 @@ export async function GET() {
   );
 
   return Response.json({
-    ok: failingQueries.length === 0,
+    ok: failingQueries.length === 0 && database.ready,
     checkedAt: new Date().toISOString(),
     sampleCompanyId,
+    database,
     defaults: {
       overviewStats: DEFAULT_OVERVIEW_STATS,
       filterOptions: DEFAULT_FILTER_OPTIONS,
@@ -272,8 +276,10 @@ export async function GET() {
     failingQueries,
     normalizationWarnings,
     hint:
-      failingQueries.length > 0
-        ? "Inspect failingQueries and server logs (event=server_render_failure) for root cause."
-        : "All render queries succeeded. If a page still fails, check component-level render errors.",
+      !database.ready
+        ? "Database schema is not ready. Redeploy to run migrations, or run npm run db:bootstrap against production DATABASE_URL."
+        : failingQueries.length > 0
+          ? "Inspect failingQueries and server logs (event=server_render_failure) for root cause."
+          : "All render queries succeeded. If a page still fails, check component-level render errors.",
   });
 }

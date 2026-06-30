@@ -23,7 +23,7 @@ export async function register() {
   }
 
   try {
-    const { ensureDatabaseReady, runDatabaseMigrations } = await import(
+    const { ensureDatabaseReady, runDatabaseMigrations, getDatabaseStatus } = await import(
       "@/lib/db/bootstrap"
     );
 
@@ -33,6 +33,22 @@ export async function register() {
     }
 
     await runDatabaseMigrations();
+
+    const status = await getDatabaseStatus();
+    if (!status.ready) {
+      console.error(
+        "[db] Schema not ready after migrations:",
+        JSON.stringify({
+          tables: status.tables,
+          companyColumns: status.companyColumns,
+          error: status.error,
+        })
+      );
+    } else {
+      console.log(
+        `[db] Schema ready (${status.companyCount} companies, mode=${status.config.mode})`
+      );
+    }
   } catch (error) {
     const { formatDatabaseConnectionError } = await import("@/lib/db/validate-config");
     console.error("[db] Startup database setup failed:", formatDatabaseConnectionError(error));

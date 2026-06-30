@@ -1,3 +1,5 @@
+import { formatQueryErrorForLog, formatQueryErrorForUser, unwrapQueryError } from "@/lib/db/query-errors";
+
 type ServerLogContext = {
   route: string;
   queryName?: string;
@@ -8,28 +10,29 @@ type ServerLogContext = {
 };
 
 function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  if (typeof error === "string") return error;
-  try {
-    return JSON.stringify(error);
-  } catch {
-    return "Unknown error";
-  }
+  const root = unwrapQueryError(error);
+  return root.message;
 }
 
 function getErrorStack(error: unknown): string | undefined {
-  return error instanceof Error ? error.stack : undefined;
+  const root = unwrapQueryError(error);
+  return root.stack ?? (error instanceof Error ? error.stack : undefined);
 }
 
 export function logServerError(context: ServerLogContext): void {
-  const message = getErrorMessage(context.error);
+  const details = formatQueryErrorForLog(context.error);
   const payload = {
     level: "error" as const,
     event: "server_render_failure",
     route: context.route,
     queryName: context.queryName,
     component: context.component,
-    message,
+    message: details.message,
+    pgCode: details.pgCode,
+    pgDetail: details.pgDetail,
+    pgHint: details.pgHint,
+    drizzleQuery: details.drizzleQuery,
+    drizzleParams: details.drizzleParams,
     digest: context.digest,
     stack: getErrorStack(context.error),
     timestamp: new Date().toISOString(),

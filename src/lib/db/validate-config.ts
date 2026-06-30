@@ -1,4 +1,5 @@
 import { lookup } from "node:dns/promises";
+import { unwrapQueryError } from "@/lib/db/query-errors";
 
 export type DatabaseConnectionMode =
   | "direct"
@@ -238,31 +239,31 @@ export function formatDatabaseConnectionError(error: unknown): string {
     return config.error;
   }
 
-  if (error instanceof Error) {
-    const cause = error.cause instanceof Error ? error.cause : error;
-    const message = cause.message;
+  const root = unwrapQueryError(error);
+  const message = root.message;
 
-    if (message.includes("ENOTFOUND")) {
-      const host =
-        "hostname" in cause && typeof cause.hostname === "string"
-          ? cause.hostname
-          : config.hostname ?? "unknown host";
-      return (
-        `Cannot resolve database host "${host}". The Supabase project may be paused, deleted, or DATABASE_URL is wrong. ` +
-        "Update DATABASE_URL in Vercel from Supabase → Project Settings → Database → Connection string (URI, direct, port 5432)."
-      );
-    }
-
-    if (message.includes("ECONNREFUSED")) {
-      return "Database connection refused. Check DATABASE_URL host, port, and that the Supabase project is active.";
-    }
-
-    if (message.includes("password authentication failed")) {
-      return "Database password incorrect. Reset the database password in Supabase and update DATABASE_URL in Vercel.";
-    }
-
-    return message;
+  if (message.includes("ENOTFOUND")) {
+    const host =
+      "hostname" in root && typeof root.hostname === "string"
+        ? root.hostname
+        : config.hostname ?? "unknown host";
+    return (
+      `Cannot resolve database host "${host}". The Supabase project may be paused, deleted, or DATABASE_URL is wrong. ` +
+      "Update DATABASE_URL in Vercel from Supabase → Project Settings → Database → Connection string (URI, direct, port 5432)."
+    );
   }
 
-  return "Unknown database connection error.";
+  if (message.includes("ECONNREFUSED")) {
+    return "Database connection refused. Check DATABASE_URL host, port, and that the Supabase project is active.";
+  }
+
+  if (message.includes("password authentication failed")) {
+    return "Database password incorrect. Reset the database password in Supabase and update DATABASE_URL in Vercel.";
+  }
+
+  if (message.includes("does not exist")) {
+    return `Database schema mismatch: ${message}. Redeploy or run npm run db:bootstrap.`;
+  }
+
+  return message || "Unknown database connection error.";
 }

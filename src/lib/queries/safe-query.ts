@@ -1,4 +1,5 @@
-import { getErrorMessage, logServerError } from "@/lib/server-log";
+import { formatQueryErrorForUser } from "@/lib/db/query-errors";
+import { logServerError } from "@/lib/server-log";
 
 export type SafeQueryResult<T> =
   | { ok: true; data: T; error?: undefined }
@@ -14,8 +15,29 @@ export async function safeQuery<T>(
     const data = await fn();
     return { ok: true, data };
   } catch (error) {
+    const { repairSchemaOnError } = await import("@/db");
+    const repaired = await repairSchemaOnError(error);
+
+    if (repaired) {
+      try {
+        const data = await fn();
+        return { ok: true, data };
+      } catch (retryError) {
+        logServerError({ route, queryName, error: retryError, extra: { retriedAfterRepair: true } });
+        return {
+          ok: false,
+          data: fallback,
+          error: formatQueryErrorForUser(retryError, queryName),
+        };
+      }
+    }
+
     logServerError({ route, queryName, error });
-    return { ok: false, data: fallback, error: getErrorMessage(error) };
+    return {
+      ok: false,
+      data: fallback,
+      error: formatQueryErrorForUser(error, queryName),
+    };
   }
 }
 
