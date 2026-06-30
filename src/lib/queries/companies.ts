@@ -3,8 +3,17 @@ import { db } from "@/db";
 import { normalizeCompany } from "@/lib/company/normalize-company";
 import { withQueryTimeout } from "@/lib/db/with-query-timeout";
 import { parisEcosystemCondition } from "@/lib/queries/ecosystem-filter";
-import { PRODUCT } from "@/config/product";
 import { companies, savedCompanies } from "@/db/schema";
+
+export type CompanySortField =
+  | "default"
+  | "pmFitScore"
+  | "aiHiringScore"
+  | "fundingDate"
+  | "fundingAmountUsd"
+  | "name"
+  | "parisPresenceScore"
+  | "strategicRelevanceScore";
 
 export type CompanyFilters = {
   country?: string;
@@ -18,11 +27,39 @@ export type CompanyFilters = {
   search?: string;
   savedOnly?: boolean;
   userId?: string;
-  sortBy?: "pmFitScore" | "aiHiringScore" | "fundingDate" | "fundingAmountUsd" | "name";
+  sortBy?: CompanySortField;
   sortOrder?: "asc" | "desc";
   limit?: number;
   offset?: number;
 };
+
+function buildOrderBy(filters: CompanyFilters) {
+  const sortBy = filters.sortBy ?? "default";
+  const orderFn = filters.sortOrder === "asc" ? asc : desc;
+
+  if (sortBy === "default") {
+    return [
+      desc(companies.parisPresenceScore),
+      desc(companies.pmFitScore),
+      desc(companies.aiHiringScore),
+      desc(companies.fundingAmountUsd),
+      desc(companies.strategicRelevanceScore),
+      desc(companies.name),
+    ];
+  }
+
+  const sortColumn = {
+    pmFitScore: companies.pmFitScore,
+    aiHiringScore: companies.aiHiringScore,
+    fundingDate: companies.fundingDate,
+    fundingAmountUsd: companies.fundingAmountUsd,
+    name: companies.name,
+    parisPresenceScore: companies.parisPresenceScore,
+    strategicRelevanceScore: companies.strategicRelevanceScore,
+  }[sortBy];
+
+  return [orderFn(sortColumn)];
+}
 
 export async function queryCompanies(filters: CompanyFilters = {}) {
   return withQueryTimeout(
@@ -59,16 +96,6 @@ export async function queryCompanies(filters: CompanyFilters = {}) {
     );
   }
 
-  const sortColumn = {
-    pmFitScore: companies.pmFitScore,
-    aiHiringScore: companies.aiHiringScore,
-    fundingDate: companies.fundingDate,
-    fundingAmountUsd: companies.fundingAmountUsd,
-    name: companies.name,
-  }[filters.sortBy ?? "pmFitScore"];
-
-  const orderFn = filters.sortOrder === "asc" ? asc : desc;
-
   if (filters.savedOnly && filters.userId) {
     conditions.push(sql`${savedCompanies.id} IS NOT NULL`);
   }
@@ -95,7 +122,7 @@ export async function queryCompanies(filters: CompanyFilters = {}) {
   }
 
   const results = await query
-    .orderBy(orderFn(sortColumn))
+    .orderBy(...buildOrderBy(filters))
     .limit(filters.limit ?? 100)
     .offset(filters.offset ?? 0);
 

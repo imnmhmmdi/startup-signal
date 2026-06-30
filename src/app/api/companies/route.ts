@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { queryCompanies, getFilterOptions } from "@/lib/queries/companies";
+import { queryCompanies, getFilterOptions, type CompanySortField } from "@/lib/queries/companies";
 import { getUser } from "@/lib/supabase/server";
 
 export async function GET(request: NextRequest) {
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     search: searchParams.get("search") ?? undefined,
     savedOnly: searchParams.get("savedOnly") === "true",
     userId: user?.id,
-    sortBy: (searchParams.get("sortBy") as "pmFitScore" | "aiHiringScore" | "fundingDate") ?? "pmFitScore",
+    sortBy: (searchParams.get("sortBy") as CompanySortField | null) ?? "default",
     sortOrder: (searchParams.get("sortOrder") as "asc" | "desc") ?? "desc",
     limit: searchParams.get("limit") ? parseInt(searchParams.get("limit")!) : 100,
     offset: searchParams.get("offset") ? parseInt(searchParams.get("offset")!) : 0,

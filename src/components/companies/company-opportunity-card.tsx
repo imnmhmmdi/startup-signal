@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ArrowRight, Briefcase, MapPin, TrendingUp } from "lucide-react";
 import { CompanyLogo } from "@/components/company-logo";
 import { PmFitRing } from "@/components/overview/pm-fit-ring";
-import { CategoryBadge, FundingStageBadge } from "@/components/semantic-badges";
+import { CategoryBadge, FundingStageBadge, StrategicTargetBadge } from "@/components/semantic-badges";
 import { ScoreBadge, formatFundingAmount, getScoreTier } from "@/components/score-badge";
 import { getHiringPrediction } from "@/config/product";
 import { getTopPmFitReason } from "@/config/scoring";
@@ -15,6 +15,7 @@ import {
 } from "@/lib/semantic-colors";
 import type { Company } from "@/db/schema";
 import { cn } from "@/lib/utils";
+import { isStrategicSeedCompany } from "@/lib/queries/ecosystem-filter";
 
 export { CategoryBadge, FundingStageBadge } from "@/components/semantic-badges";
 
@@ -38,6 +39,7 @@ export function CompanyOpportunityCard({
   const fitReason = getTopPmFitReason(company.pmFitScoreBreakdown);
   const pmRoles = company.pmRoles ?? 0;
   const location = [company.hqCity, company.hqCountry].filter(Boolean).join(", ");
+  const isStrategicTarget = isStrategicSeedCompany(company.discoverySources);
 
   return (
     <Link href={`/companies/${company.id}`} className="group block h-full">
@@ -76,8 +78,9 @@ export function CompanyOpportunityCard({
             </div>
           </div>
 
-          {(company.fundingRound || company.aiCategory) && (
+          {(company.fundingRound || company.aiCategory || isStrategicTarget) && (
             <div className="flex flex-wrap gap-1.5">
+              {isStrategicTarget && <StrategicTargetBadge />}
               <FundingStageBadge round={company.fundingRound} />
               <CategoryBadge category={company.aiCategory} />
             </div>

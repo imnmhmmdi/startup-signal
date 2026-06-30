@@ -102,6 +102,10 @@ export function normalizeCompany(company: Company): Company {
     aiHiringScore: coerceScore(company.aiHiringScore),
     parisPresenceScore: coerceScore(company.parisPresenceScore),
     discoveryConfidence: coerceScore(company.discoveryConfidence),
+    strategicRelevanceScore:
+      company.strategicRelevanceScore == null
+        ? null
+        : coerceScore(company.strategicRelevanceScore),
     openRolesTotal: coerceScore(company.openRolesTotal),
     pmRoles: coerceScore(company.pmRoles),
     aiRoles: coerceScore(company.aiRoles),

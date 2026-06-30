@@ -7,8 +7,9 @@ import { hasConfirmedDomain } from "./article-enricher";
 import { buildDedupKeys, findExistingCompany } from "./dedup";
 import { computeDataHash, extractDomain, normalizeCompanyName, slugify } from "./utils";
 import { buildLogoUrlFromDomain, getCompanyDomain } from "@/lib/company-logo";
-import { computeDiscoveryConfidence } from "@/lib/scoring/discovery-confidence";
+import { computeDiscoveryConfidence, resolveDiscoverySourceKind } from "@/lib/scoring/discovery-confidence";
 import { computeParisPresenceScore } from "@/lib/scoring/paris-presence";
+import { resolveStrategicRelevanceScore } from "@/lib/scoring/strategic-relevance";
 import { explainNormalizeFailure } from "./explain-normalize-failure";
 import { mergeSeedIntoExisting, type SeedMergeChange } from "./seed-merge";
 
@@ -36,7 +37,12 @@ function resolveSourceKind(
   sourceName: string,
   normalized: NormalizedCompany
 ): SourceKind {
-  return normalized.sourceKind ?? (sourceName === "seed" ? "seed" : "rss");
+  if (normalized.sourceKind) return normalized.sourceKind;
+  const sources = normalized.discoverySources ?? [];
+  if (sources.length > 0) {
+    return resolveDiscoverySourceKind(sources);
+  }
+  return sourceName === "seed" || sourceName === "strategic-seed" ? "seed" : "rss";
 }
 
 function buildCompanySnapshot(
@@ -90,6 +96,10 @@ function buildCompanySnapshot(
     visaSponsorship: normalized.visaSponsorship ?? existing?.visaSponsorship,
     languagesRequired: normalized.languagesRequired ?? existing?.languagesRequired ?? [],
     description: normalized.description ?? existing?.description,
+    strategicRelevanceScore: resolveStrategicRelevanceScore(
+      existing?.strategicRelevanceScore,
+      normalized.strategicRelevanceScore
+    ),
     sources: mergedSources,
     discoverySources,
     dataHash: computeDataHash({
@@ -329,7 +339,7 @@ export async function backfillDiscoveryScores() {
 
   for (const company of allCompanies) {
     const discoverySources = company.discoverySources ?? [];
-    const sourceKind: SourceKind = discoverySources.includes("seed") ? "seed" : "rss";
+    const sourceKind = resolveDiscoverySourceKind(discoverySources);
     const discoveryConfidence = computeDiscoveryConfidence(
       { discoverySources },
       {

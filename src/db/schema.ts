@@ -76,6 +76,7 @@ export const companies = pgTable(
     pmFitScoreBreakdown: jsonb("pm_fit_score_breakdown").$type<
       Record<string, number>
     >(),
+    strategicRelevanceScore: integer("strategic_relevance_score"),
     description: text("description"),
     dataHash: text("data_hash"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -94,6 +95,7 @@ export const companies = pgTable(
     index("companies_normalized_name_idx").on(table.normalizedName),
     index("companies_paris_presence_score_idx").on(table.parisPresenceScore),
     index("companies_discovery_confidence_idx").on(table.discoveryConfidence),
+    index("companies_strategic_relevance_score_idx").on(table.strategicRelevanceScore),
   ]
 );
 

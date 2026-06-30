@@ -1,5 +1,8 @@
 import type { Company } from "@/db/schema";
 import type { NormalizedCompany } from "./types";
+import {
+  resolveStrategicRelevanceScore,
+} from "@/lib/scoring/strategic-relevance";
 
 export type SeedMergeChange = {
   field: string;
@@ -204,8 +207,19 @@ export function mergeSeedIntoExisting(
         : seed.languagesRequired ?? existing.languagesRequired) ?? []
     ),
     description,
+    strategicRelevanceScore: pick(
+      "strategicRelevanceScore",
+      existing.strategicRelevanceScore,
+      resolveStrategicRelevanceScore(
+        existing.strategicRelevanceScore,
+        seed.strategicRelevanceScore
+      )
+    ),
     discoverySources: [
-      ...new Set([...(existing.discoverySources ?? []), ...(seed.discoverySources ?? ["seed"])]),
+      ...new Set([
+        ...(existing.discoverySources ?? []),
+        ...(seed.discoverySources ?? ["seed"]),
+      ]),
     ],
     sourceKind: "seed",
     sources: { ...(existing.sources ?? {}), ...seed.sources },

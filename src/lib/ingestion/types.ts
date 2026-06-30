@@ -39,6 +39,7 @@ export type NormalizedCompany = {
   normalizedName?: string;
   discoverySources?: string[];
   sourceKind?: SourceKind;
+  strategicRelevanceScore?: number | null;
   sources: Record<string, { value: unknown; source: string; fetchedAt: string }>;
 };
 

@@ -26,6 +26,17 @@ export function CategoryBadge({ category }: { category: string | null | undefine
   );
 }
 
+export function StrategicTargetBadge() {
+  return (
+    <Badge
+      variant="outline"
+      className="border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-300"
+    >
+      Strategic target
+    </Badge>
+  );
+}
+
 export function FundingAmount({ amount }: { amount: ReactNode }) {
   return <span className={getFundingAmountClasses()}>{amount}</span>;
 }

@@ -15,7 +15,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { CompanyLogo } from "@/components/company-logo";
 import { ScoreBadge, formatFundingAmount, formatDate } from "@/components/score-badge";
-import { CategoryBadge, FundingStageBadge } from "@/components/semantic-badges";
+import { CategoryBadge, FundingStageBadge, StrategicTargetBadge } from "@/components/semantic-badges";
+import { isStrategicSeedCompany } from "@/lib/queries/ecosystem-filter";
 import { getHiringPrediction } from "@/config/product";
 import {
   getFundingAmountClasses,
@@ -94,6 +95,7 @@ export function CompanyTable({ companies, isAuthenticated }: CompanyTableProps) 
           <TableBody>
             {companies.map((company) => {
               const prediction = getHiringPrediction(company.aiHiringScore ?? 0);
+              const isStrategicTarget = isStrategicSeedCompany(company.discoverySources);
               return (
               <TableRow key={company.id} className={cn("group", getInteractiveTableRowClasses())}>
                 <TableCell>
@@ -126,8 +128,9 @@ export function CompanyTable({ companies, isAuthenticated }: CompanyTableProps) 
                       size="sm"
                     />
                     <span className="min-w-0">
-                      <span className="flex items-center gap-1.5">
+                      <span className="flex flex-wrap items-center gap-1.5">
                         {company.name}
+                        {isStrategicTarget && <StrategicTargetBadge />}
                         {company.website && (
                           <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100" />
                         )}

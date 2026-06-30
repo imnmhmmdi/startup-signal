@@ -26,7 +26,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ScoreBadge, formatFundingAmount, formatDate } from "@/components/score-badge";
-import { CategoryBadge, FundingStageBadge } from "@/components/semantic-badges";
+import { CategoryBadge, FundingStageBadge, StrategicTargetBadge } from "@/components/semantic-badges";
+import { isStrategicSeedCompany } from "@/lib/queries/ecosystem-filter";
 import { CompanyLogo } from "@/components/company-logo";
 import { ProfileSummaryCard } from "@/components/profile-summary-card";
 import { getHiringPrediction } from "@/config/product";
@@ -132,6 +133,7 @@ export function CompanyProfile({
             <div>
               <h1 className="text-page-title">{company.name}</h1>
               <div className="flex flex-wrap items-center gap-2 mt-2">
+                {isStrategicSeedCompany(company.discoverySources) && <StrategicTargetBadge />}
                 {company.hqCountry && <Badge variant="outline">{company.hqCountry}</Badge>}
                 {company.aiCategory && <CategoryBadge category={company.aiCategory} />}
                 {company.businessModel && <Badge variant="outline">{company.businessModel}</Badge>}
@@ -211,6 +213,14 @@ export function CompanyProfile({
                   size="md"
                   align="start"
                 />
+                {(company.strategicRelevanceScore ?? 0) > 0 && (
+                  <ScoreBadge
+                    score={company.strategicRelevanceScore ?? 0}
+                    label="Strategic relevance"
+                    size="md"
+                    align="start"
+                  />
+                )}
               </div>
               {(company.discoverySources ?? []).length > 0 && (
                 <div>

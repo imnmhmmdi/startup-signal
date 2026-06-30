@@ -8,9 +8,11 @@ import {
   BASE_PM_FIT_SCORE,
 } from "@/config/scoring";
 import { hasConfirmedDomain } from "@/lib/ingestion/article-enricher";
-import { computeDiscoveryConfidence } from "@/lib/scoring/discovery-confidence";
+import {
+  computeDiscoveryConfidence,
+  resolveDiscoverySourceKind,
+} from "@/lib/scoring/discovery-confidence";
 import { computeParisPresenceScore } from "@/lib/scoring/paris-presence";
-import type { SourceKind } from "@/lib/ingestion/types";
 
 export type ScoreBreakdown = Record<string, number>;
 
@@ -176,7 +178,7 @@ export async function computeAllScores(db: typeof import("@/db").db) {
     const aiHiring = computeAiHiringScore(company);
     const pmFit = computePmFitScore(company);
     const discoverySources = company.discoverySources ?? [];
-    const sourceKind: SourceKind = discoverySources.includes("seed") ? "seed" : "rss";
+    const sourceKind = resolveDiscoverySourceKind(discoverySources);
     const discoveryConfidence = computeDiscoveryConfidence(
       { discoverySources },
       {

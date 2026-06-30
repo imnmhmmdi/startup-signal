@@ -143,17 +143,20 @@ export function DashboardFilters({ filterOptions }: DashboardFiltersProps) {
         <div className="space-y-1.5">
           <Label className="text-xs">Sort by</Label>
           <Select
-            value={searchParams.get("sortBy") ?? "pmFitScore"}
+            value={searchParams.get("sortBy") ?? "default"}
             onValueChange={(v) => updateFilter("sortBy", v)}
           >
             <SelectTrigger className="h-9">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="default">Recommended (Paris + PM fit)</SelectItem>
+              <SelectItem value="parisPresenceScore">Paris presence</SelectItem>
               <SelectItem value="pmFitScore">PM fit score</SelectItem>
               <SelectItem value="aiHiringScore">Hiring signal</SelectItem>
               <SelectItem value="fundingDate">Funding date</SelectItem>
               <SelectItem value="fundingAmountUsd">Funding amount</SelectItem>
+              <SelectItem value="strategicRelevanceScore">Strategic relevance</SelectItem>
             </SelectContent>
           </Select>
         </div>

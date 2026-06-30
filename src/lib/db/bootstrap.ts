@@ -8,6 +8,7 @@ import * as schema from "@/db/schema";
 import { upsertSeedCompany, backfillDiscoveryScores } from "@/lib/ingestion/ingest-service";
 import { computeAllScores } from "@/lib/scoring/compute-scores";
 import { SEED_COMPANIES } from "@/lib/db/seed-data";
+import { STRATEGIC_SEED_COMPANIES } from "@/lib/db/strategic-seed-data";
 import {
   formatDatabaseConnectionError,
   validateDatabaseConfig,
@@ -122,11 +123,18 @@ async function runBootstrap(options?: { seedIfEmpty?: boolean }): Promise<void> 
       (await isCompaniesTableEmpty(db));
 
     if (shouldSeed) {
-      console.log(`[db] Seeding ${SEED_COMPANIES.length} companies...`);
+      console.log(`[db] Seeding ${SEED_COMPANIES.length} EU companies...`);
       let created = 0;
       let updated = 0;
 
       for (const company of SEED_COMPANIES) {
+        const result = await upsertSeedCompany(company);
+        if (result.status === "created") created++;
+        if (result.status === "updated") updated++;
+      }
+
+      console.log(`[db] Seeding ${STRATEGIC_SEED_COMPANIES.length} strategic target companies...`);
+      for (const company of STRATEGIC_SEED_COMPANIES) {
         const result = await upsertSeedCompany(company);
         if (result.status === "created") created++;
         if (result.status === "updated") updated++;

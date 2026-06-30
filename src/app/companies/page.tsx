@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { QueryErrorBanner } from "@/components/query-error-banner";
 import { DEFAULT_FILTER_OPTIONS } from "@/lib/queries/defaults";
 import { safeQuery } from "@/lib/queries/safe-query";
-import { queryCompanies, getFilterOptions } from "@/lib/queries/companies";
+import { queryCompanies, getFilterOptions, type CompanySortField } from "@/lib/queries/companies";
 import { getUser } from "@/lib/supabase/server";
 import { DashboardFilters } from "@/components/dashboard/filters";
 import { CompaniesResults, CompaniesViewToggle } from "@/components/dashboard/companies-results";
@@ -35,7 +35,7 @@ export default async function CompaniesPage({ searchParams }: PageProps) {
     minAiHiringScore: params.minAiHiringScore ? parseInt(params.minAiHiringScore) : undefined,
     search: params.search,
     userId: user?.id,
-    sortBy: (params.sortBy as "pmFitScore" | "aiHiringScore" | "fundingDate") ?? "pmFitScore",
+    sortBy: (params.sortBy as CompanySortField | undefined) ?? "default",
     sortOrder: (params.sortOrder as "asc" | "desc") ?? "desc",
   };
 
@@ -57,7 +57,7 @@ export default async function CompaniesPage({ searchParams }: PageProps) {
       <QueryErrorBanner errors={loadErrors} />
       <PageHeader
         title="Companies"
-        subtitle={`${companies.length} Paris ecosystem opportunities — ranked by PM fit and hiring signal`}
+        subtitle={`${companies.length} opportunities — Paris ecosystem and strategic AI targets, ranked by presence and PM fit`}
       />
 
           <Suspense fallback={<Skeleton className="h-48 w-full rounded-xl" />}>
