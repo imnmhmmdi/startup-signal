@@ -12,7 +12,7 @@ export function ProfileChip() {
       <span aria-hidden="true">·</span>
       <span>{sectors}</span>
       <span aria-hidden="true">·</span>
-      <span>{PRODUCT.defaultCountry}</span>
+      <span>{PRODUCT.focusRegion}</span>
     </div>
   );
 }

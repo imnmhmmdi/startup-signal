@@ -23,7 +23,10 @@ export default async function CompaniesPage({ searchParams }: PageProps) {
   const view = params.view === "table" ? "table" : "cards";
 
   const filters = {
-    country: params.country ?? PRODUCT.defaultCountry,
+    minParisPresenceScore: params.minParisPresenceScore
+      ? parseInt(params.minParisPresenceScore)
+      : PRODUCT.minParisPresenceScore,
+    country: params.country,
     fundingRound: params.fundingRound,
     fundingDateFrom: params.fundingDateFrom,
     fundingDateTo: params.fundingDateTo,
@@ -58,7 +61,7 @@ export default async function CompaniesPage({ searchParams }: PageProps) {
       />
 
           <Suspense fallback={<Skeleton className="h-48 w-full rounded-xl" />}>
-        <DashboardFilters filterOptions={filterOptions} defaultCountry={PRODUCT.defaultCountry} />
+        <DashboardFilters filterOptions={filterOptions} />
       </Suspense>
 
       <div className="flex justify-end">

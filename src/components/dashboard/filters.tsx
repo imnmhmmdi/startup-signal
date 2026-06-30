@@ -14,7 +14,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { PRODUCT } from "@/config/product";
 import { getSurfacePanelClasses } from "@/lib/semantic-colors";
 import { cn } from "@/lib/utils";
 
@@ -26,13 +25,9 @@ type FilterOptions = {
 
 type DashboardFiltersProps = {
   filterOptions: FilterOptions;
-  defaultCountry?: string;
 };
 
-export function DashboardFilters({
-  filterOptions,
-  defaultCountry = PRODUCT.defaultCountry,
-}: DashboardFiltersProps) {
+export function DashboardFilters({ filterOptions }: DashboardFiltersProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -56,13 +51,11 @@ export function DashboardFilters({
 
   const clearFilters = () => {
     startTransition(() => {
-      router.push(`${basePath}?country=${defaultCountry}`);
+      router.push(basePath);
     });
   };
 
-  const hasFilters = Array.from(searchParams.entries()).some(
-    ([k, v]) => !(k === "country" && v === defaultCountry)
-  );
+  const hasFilters = searchParams.size > 0;
   const minPmFit = parseInt(searchParams.get("minPmFitScore") ?? "0");
   const minHiring = parseInt(searchParams.get("minAiHiringScore") ?? "0");
 
@@ -94,13 +87,13 @@ export function DashboardFilters({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="space-y-1.5">
-          <Label className="text-xs">Country</Label>
+          <Label className="text-xs">HQ country</Label>
           <Select
-            value={searchParams.get("country") ?? defaultCountry}
+            value={searchParams.get("country") ?? "all"}
             onValueChange={(v) => updateFilter("country", v === "all" ? null : v)}
           >
             <SelectTrigger className="h-9">
-              <SelectValue placeholder={defaultCountry} />
+              <SelectValue placeholder="All countries" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All countries</SelectItem>

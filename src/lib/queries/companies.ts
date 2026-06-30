@@ -2,10 +2,13 @@ import { and, asc, desc, eq, gte, lte, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import { normalizeCompany } from "@/lib/company/normalize-company";
 import { withQueryTimeout } from "@/lib/db/with-query-timeout";
+import { parisEcosystemCondition } from "@/lib/queries/ecosystem-filter";
+import { PRODUCT } from "@/config/product";
 import { companies, savedCompanies } from "@/db/schema";
 
 export type CompanyFilters = {
   country?: string;
+  minParisPresenceScore?: number;
   fundingRound?: string;
   fundingDateFrom?: string;
   fundingDateTo?: string;
@@ -28,6 +31,9 @@ export async function queryCompanies(filters: CompanyFilters = {}) {
 
   if (filters.country) {
     conditions.push(eq(companies.hqCountry, filters.country));
+  }
+  if (filters.minParisPresenceScore !== undefined) {
+    conditions.push(parisEcosystemCondition(filters.minParisPresenceScore));
   }
   if (filters.fundingRound) {
     conditions.push(eq(companies.fundingRound, filters.fundingRound));

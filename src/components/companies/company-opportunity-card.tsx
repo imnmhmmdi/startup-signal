@@ -37,7 +37,7 @@ export function CompanyOpportunityCard({
   const prediction = getHiringPrediction(hiringScore);
   const fitReason = getTopPmFitReason(company.pmFitScoreBreakdown);
   const pmRoles = company.pmRoles ?? 0;
-  const location = [company.hqCity, company.hqCountry ?? "France"].filter(Boolean).join(", ");
+  const location = [company.hqCity, company.hqCountry].filter(Boolean).join(", ");
 
   return (
     <Link href={`/companies/${company.id}`} className="group block h-full">

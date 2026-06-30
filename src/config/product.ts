@@ -4,6 +4,7 @@ export const PRODUCT = {
   description:
     "Discover the best Senior PM opportunities in the Paris ecosystem — funding momentum, hiring signals, and ecosystem presence.",
   defaultCountry: "France",
+  minParisPresenceScore: 20,
   focusRegion: "Paris ecosystem",
 } as const;
 

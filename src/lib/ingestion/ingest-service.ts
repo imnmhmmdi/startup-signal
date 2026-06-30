@@ -10,6 +10,16 @@ import { buildLogoUrlFromDomain, getCompanyDomain } from "@/lib/company-logo";
 import { computeDiscoveryConfidence } from "@/lib/scoring/discovery-confidence";
 import { computeParisPresenceScore } from "@/lib/scoring/paris-presence";
 import { explainNormalizeFailure } from "./explain-normalize-failure";
+import { mergeSeedIntoExisting, type SeedMergeChange } from "./seed-merge";
+
+export type SeedUpsertResult = {
+  status: "created" | "updated";
+  companyId?: string;
+  name: string;
+  changes: SeedMergeChange[];
+  previousParisPresenceScore?: number | null;
+  parisPresenceScore?: number;
+};
 
 function recordRejectionReason(
   reasons: Record<string, number>,
@@ -250,15 +260,68 @@ async function upsertCompany(
   return { status: "created", companyId: created.id };
 }
 
-export async function upsertSeedCompany(normalized: NormalizedCompany) {
-  return upsertCompany(
-    {
-      ...normalized,
-      discoverySources: normalized.discoverySources ?? ["seed"],
-      sourceKind: "seed",
-    },
-    "seed"
+export async function upsertSeedCompany(
+  normalized: NormalizedCompany
+): Promise<SeedUpsertResult> {
+  const slug = slugify(normalized.name);
+  const domain = extractDomain(normalized.website) ?? normalized.websiteDomain;
+
+  const existing = await findExistingCompany(
+    buildDedupKeys({
+      name: normalized.name,
+      website: normalized.website,
+      websiteDomain: domain,
+      linkedinUrl: normalized.linkedinUrl,
+      slug,
+    })
   );
+
+  const seedInput = {
+    ...normalized,
+    discoverySources: normalized.discoverySources ?? ["seed"],
+    sourceKind: "seed" as const,
+  };
+
+  const mergeResult = existing ? mergeSeedIntoExisting(existing, seedInput) : null;
+  const mergedInput = mergeResult?.merged ?? seedInput;
+  const changes = mergeResult?.changes ?? [];
+  const previousParisPresenceScore = existing?.parisPresenceScore;
+
+  const snapshot = buildCompanySnapshot(mergedInput, "seed", existing ?? undefined);
+
+  if (existing) {
+    await db
+      .update(companies)
+      .set({
+        ...snapshot,
+        updatedAt: new Date(),
+      })
+      .where(eq(companies.id, existing.id));
+
+    return {
+      status: "updated",
+      companyId: existing.id,
+      name: existing.name,
+      changes,
+      previousParisPresenceScore,
+      parisPresenceScore: snapshot.parisPresenceScore,
+    };
+  }
+
+  const [created] = await db
+    .insert(companies)
+    .values({
+      ...snapshot,
+    })
+    .returning({ id: companies.id });
+
+  return {
+    status: "created",
+    companyId: created.id,
+    name: normalized.name,
+    changes: [],
+    parisPresenceScore: snapshot.parisPresenceScore,
+  };
 }
 
 export async function backfillDiscoveryScores() {

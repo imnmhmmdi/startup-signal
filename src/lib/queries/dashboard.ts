@@ -2,8 +2,8 @@ import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { normalizeCompanies } from "@/lib/company/normalize-company";
 import { withQueryTimeout } from "@/lib/db/with-query-timeout";
+import { parisEcosystemCondition } from "@/lib/queries/ecosystem-filter";
 import { companies, savedCompanies } from "@/db/schema";
-import { PRODUCT } from "@/config/product";
 
 const SIX_MONTHS_AGO = new Date();
 SIX_MONTHS_AGO.setMonth(SIX_MONTHS_AGO.getMonth() - 6);
@@ -26,7 +26,7 @@ function daysAgo(days: number): Date {
 export async function getOverviewStats(userId?: string) {
   return withQueryTimeout(
     (async () => {
-  const frenchCondition = eq(companies.hqCountry, PRODUCT.defaultCountry);
+  const ecosystemCondition = parisEcosystemCondition();
   const recentFunding = gte(companies.fundingDate, SIX_MONTHS_AGO);
 
   const oneWeekAgo = daysAgo(7);
@@ -42,22 +42,22 @@ export async function getOverviewStats(userId?: string) {
     db
       .select({ count: sql<number>`count(*)::int` })
       .from(companies)
-      .where(frenchCondition)
+      .where(ecosystemCondition)
       .then((r) => r[0].count),
     db
       .select({ count: sql<number>`count(*)::int` })
       .from(companies)
-      .where(and(frenchCondition, recentFunding))
+      .where(and(ecosystemCondition, recentFunding))
       .then((r) => r[0].count),
     db
       .select({ count: sql<number>`count(*)::int` })
       .from(companies)
-      .where(and(frenchCondition, gte(companies.pmFitScore, 70)))
+      .where(and(ecosystemCondition, gte(companies.pmFitScore, 70)))
       .then((r) => r[0].count),
     db
       .select({ total: sql<number>`coalesce(sum(${companies.pmRoles}), 0)::int` })
       .from(companies)
-      .where(frenchCondition)
+      .where(ecosystemCondition)
       .then((r) => r[0].total),
     userId
       ? db
@@ -71,7 +71,7 @@ export async function getOverviewStats(userId?: string) {
       .from(companies)
       .where(
         and(
-          frenchCondition,
+          ecosystemCondition,
           gte(companies.pmFitScore, 70),
           gte(companies.fundingDate, oneWeekAgo)
         )
@@ -97,7 +97,7 @@ export async function getTopPmFitCompanies(limit = 5) {
     db
       .select()
       .from(companies)
-      .where(eq(companies.hqCountry, PRODUCT.defaultCountry))
+      .where(parisEcosystemCondition())
       .orderBy(desc(companies.pmFitScore))
       .limit(limit),
     "Top PM fit companies"
@@ -121,7 +121,7 @@ export async function queryFundingEvents(
   limit = 100
 ) {
   const conditions = [
-    eq(companies.hqCountry, PRODUCT.defaultCountry),
+    parisEcosystemCondition(),
     sql`${companies.fundingDate} IS NOT NULL`,
   ];
 
@@ -173,10 +173,7 @@ export async function getStrongHiringSignals(limit = 5) {
       .select()
       .from(companies)
       .where(
-        and(
-          eq(companies.hqCountry, PRODUCT.defaultCountry),
-          gte(companies.aiHiringScore, 60)
-        )
+        and(parisEcosystemCondition(), gte(companies.aiHiringScore, 60))
       )
       .orderBy(desc(companies.aiHiringScore))
       .limit(limit),

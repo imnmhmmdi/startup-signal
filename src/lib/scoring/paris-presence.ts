@@ -9,7 +9,7 @@ const FRENCH_ECOSYSTEM_SOURCES = new Set([
 ]);
 
 const PARIS_OFFICE_PATTERN =
-  /paris\s+(office|hub|team|lab|site|campus|headquarters|hq)|office\s+in\s+paris|based\s+in\s+paris|paris-based|station\s+f|bpifrance|french\s+tech|la\s+french\s+tech|société\s+française|entité\s+juridique\s+française|registered\s+in\s+france|legal\s+entity\s+in\s+france/i;
+  /paris\s+(?:[\w&-]+\s+){0,3}(office|hub|team|lab|site|campus|headquarters|hq|r&d|rd)|office\s+in\s+paris|team\s+in\s+paris|hiring\s+in\s+paris|based\s+in\s+paris|paris-based|station\s+f|bpifrance|french\s+tech|la\s+french\s+tech|société\s+française|entité\s+juridique\s+française|registered\s+in\s+france|legal\s+entity\s+in\s+france/i;
 
 const FRANCE_OFFICE_PATTERN =
   /france\s+(office|hub|team|lab|site|campus|engineering|product|r&d|rd)|office\s+in\s+france|engineering\s+team\s+in\s+france|product\s+team\s+in\s+france|french\s+entity|entité\s+en\s+france/i;

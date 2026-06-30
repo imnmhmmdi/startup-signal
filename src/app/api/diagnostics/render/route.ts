@@ -129,7 +129,11 @@ export async function GET() {
 
   const companiesQueries = await Promise.all([
     runQueryCheck("/companies", "queryCompanies", () =>
-      queryCompanies({ country: PRODUCT.defaultCountry, sortBy: "pmFitScore", sortOrder: "desc" })
+      queryCompanies({
+        minParisPresenceScore: PRODUCT.minParisPresenceScore,
+        sortBy: "pmFitScore",
+        sortOrder: "desc",
+      })
     ),
     runQueryCheck("/companies", "getFilterOptions", () => getFilterOptions()),
   ]);

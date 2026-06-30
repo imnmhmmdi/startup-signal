@@ -17,7 +17,7 @@ type FundingEventCardProps = {
 
 export function FundingEventCard({ company }: FundingEventCardProps) {
   const prediction = getHiringPrediction(company.aiHiringScore ?? 0);
-  const location = [company.hqCity, company.hqCountry ?? "France"].filter(Boolean).join(", ");
+  const location = [company.hqCity, company.hqCountry].filter(Boolean).join(", ");
 
   return (
     <Link href={`/companies/${company.id}`} className={getFundingCardHoverClasses()}>

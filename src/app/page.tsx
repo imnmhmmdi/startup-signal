@@ -114,7 +114,7 @@ export default async function OverviewPage() {
         </div>
         <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
           <StatCard
-            label="French startups tracked"
+            label="Paris ecosystem companies"
             value={stats.frenchStartups}
             detail="Funded AI & tech companies"
             href="/companies"
